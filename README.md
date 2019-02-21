@@ -64,16 +64,18 @@ register('./routes');
 
 // register custom routes
 // GET: example.com/foo?bier=wurst
-on('get', '/foo', async  ({req, res, query}) => {
+on('get', '/foo', async  (req, res, query, container) => {
     // query === {bier: 'wurst'}
-    send(res, 200, {foo: 'bar', query});
+    send(res, 200, {foo: 'bar', query, container});
 });
 
 // register middleware
 // executes on every route hit
-use((next) => ({req, res}) => {
+use((next) => (req, res, query, container) => {
+    container.somedata = 123;
+    
     // do middleware stuff here
-    return next({req, res});
+    return next(req, res, query, container);
 });
 
 // export route/r to micro
