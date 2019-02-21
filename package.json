@@ -1,0 +1,23 @@
+{
+  "name": "micro-r",
+  "version": "0.1.0",
+  "description": "file structure based router for micro",
+  "main": "index.js",
+  "author": {
+    "name": "Oleg Kamlowski",
+    "email": "n@sovrin.de"
+  },
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sovrin/micro-r.git"
+  },
+  "keywords": [
+    "micro",
+    "router"
+  ]
+}
