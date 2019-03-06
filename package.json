@@ -1,8 +1,12 @@
 {
   "name": "micro-r",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "file structure based router for micro",
   "main": "index.js",
+  "scripts": {
+    "test": "tape tests/**/*.test.js | tap-diff",
+    "prepublish": "npm run test"
+  },
   "author": {
     "name": "Oleg Kamlowski",
     "email": "n@sovrin.de"
@@ -19,5 +23,11 @@
   "keywords": [
     "micro",
     "router"
-  ]
+  ],
+  "devDependencies": {
+    "micro": "^9.3.3",
+    "supertest": "^3.4.2",
+    "tap-diff": "^0.1.1",
+    "tape": "^4.10.1"
+  }
 }
