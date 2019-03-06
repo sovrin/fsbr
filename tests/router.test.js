@@ -314,7 +314,7 @@ test('micro-r', (tape) => {
             request(route)
                 .get('/')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['foo']})
+                .expect({'data': ['a']})
                 .expect(200)
                 .end((err) => {
                     tape.error(err);
@@ -360,7 +360,7 @@ test('micro-r', (tape) => {
             request(route)
                 .get('/a/b/c/d')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['foo', 'buz', 'final']})
+                .expect({'data': ['a', 'c', 'd']})
                 .expect(200)
                 .end((err) => {
                     tape.error(err);
@@ -374,6 +374,32 @@ test('micro-r', (tape) => {
                 .post('/a/b')
                 .expect('Content-Type', /json/)
                 .expect({'data': ['foobar']})
+                .expect(200)
+                .end((err) => {
+                    tape.error(err);
+                    tape.end();
+                })
+            ;
+        });
+
+        tape.test('should respond 404 to GET:/w/x/y/z', (tape) => {
+            request(route)
+                .get('/w/x/y/z')
+                .expect('Content-Type', /json/)
+                .expect({'data': ['a', 'y', 'z']})
+                .expect(200)
+                .end((err) => {
+                    tape.error(err);
+                    tape.end();
+                })
+            ;
+        });
+
+        tape.test('should respond 404 to GET:/w/x/y/z/a/b/c/d', (tape) => {
+            request(route)
+                .get('/w/x/y/z/a/b/c/d')
+                .expect('Content-Type', /json/)
+                .expect({'data': ['a', 'y', 'z', 'c', 'd']})
                 .expect(200)
                 .end((err) => {
                     tape.error(err);

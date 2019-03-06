@@ -1,8 +1,6 @@
 module.exports = [
     (next) => (req, res) => {
-        if (!res.data) {
-            res.data = ['a'];
-        }
+        res.data.push('z');
 
         return next(req, res);
     },
