@@ -1,10 +1,8 @@
-module.exports = [
-    (next) => (req, res) => {
+module.exports = (next) => (req, res) => {
 
-        if (!res.data) {
-            res.data = ['foo'];
-        }
+    if (!res.data) {
+        res.data = ['foo'];
+    }
 
-        return next(req, res);
-    },
-];
+    return next(req, res);
+};

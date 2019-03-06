@@ -131,6 +131,42 @@ describe('micro-r', () => {
         });
     });
 
+    describe('register multiple flat folder structures', () => {
+        const {register, route} = router((req, res) => {
+            send(res, 404);
+        });
+
+        (async () => {
+            await register('./test/fixtures/nested/a');
+            await register('./test/fixtures/nested/b');
+        })();
+
+        it('should respond 200 to GET:/', (done) => {
+            request(route)
+                .get('/')
+                .expect('Content-Type', /json/)
+                .expect({'ok': true})
+                .expect(200, done)
+            ;
+        });
+
+        it('should respond 200 to GET:/c', (done) => {
+            request(route)
+                .get('/c')
+                .expect('Content-Type', /json/)
+                .expect({'ok': true})
+                .expect(200, done)
+            ;
+        });
+
+        it('should respond 404 of fallback', (done) => {
+            request(route)
+                .get('/foo')
+                .expect(404, done)
+            ;
+        });
+    });
+
     describe('register nested folder structure', () => {
         const {register, route} = router((req, res) => {
             send(res, 404);
@@ -258,7 +294,7 @@ describe('micro-r', () => {
             ;
         });
 
-        it('should respond 404 to GET:/', (done) => {
+        it('should respond 404 to GET:/foo', (done) => {
             request(route)
                 .get('/foo')
                 .expect(404, done)
