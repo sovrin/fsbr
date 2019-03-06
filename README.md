@@ -1,36 +1,61 @@
 <h1 align="left">micro-r</h1>
 
-file structure based router for micro
+file structure based router for micro/express
 
 ***
-
-## Installation
+# Installation
 
 ```bash
 $ npm i micro-r
 ```
 
-## Features
-* small
-* folder/file based routing
+# About
+micro-r is a small routing library utilizing file/folder structures to bind handlers to.
+Also, routes are not dynamic and are bound at runtime, rendering "Directory Traversal Attacks" not applicable.
 
+Middlewares can be defined by use() or by dropping index.js files in the desired folders. These must export either a plain middleware function or an array of functions.
 
-## Usage
-```register(PATH_TO_ROUTER_FOLDER)```
-Register automatically binds a folder recursively. Every folder name becomes a part of the pathname.
-Every folder can contain a js file with one or more of the following http method names `get, post, put, patch, delete, head, options`.
+# Functions
+## on(method, path, handler)
+Register custom handlers to specific paths.
+* `method` (string); one of: `get, post, put, patch, delete, head, options`
+* `path` (string); pathname to match
+* `handler` (function); callback function receiving req and res as parameters
 
-## Example
+## use(middleware)
+Register a middleware function.
+* `middleware` (function); e.g.`(next) => (req, res) => next(req, res)`
 
+## chain(middlewares)
+Transforms an array of middleware functions into a single middleware function.
+* `middlewares` (array[function]); similar to use() but with arrays
+
+## register(basepath)
+Recursively register the given path and its subfolders.
+* `basepath` (string); path to folder
+
+## route(req, res)
+Handle the incoming requests.
+* `req` (IncomingMessage); server request object
+* `res` (ServerResponse); server response object
+
+# Example
 Following folder/file structure
 ```
 routes
+|
+├───api
+|       index.js
+|       get.js     
+|
 ├───photo
+|   |   index.js
 │   │   get.js
 │   │   post.js
 │   │   delete.js
 │   │
 │   └───vacation
+|           index.js
 │           get.js
 │           post.js
 │
@@ -38,6 +63,7 @@ routes
         post.js
 ```
 registers the following routes
+* `GET:` example.com/api
 * `GET:` example.com/photo
 * `POST:` example.com/photo
 * `DELETE:` example.com/photo
@@ -45,32 +71,25 @@ registers the following routes
 * `POST:` example.com/photo/vacation
 * `POST:` example.com/user
 
-## Example
+## Vanilla
 ```ecmascript 6
 const router = require('micro-r');
 const {send} = require('micro');
 
-// executes on route miss
-// also, no middleware support
 const fallback = (req, res) => {
     send(res, '404', 'WOOPS');
 };
 
-// initialize router with an optional fallback handle
-const {on, use, register, route} = router(fallback);
+const {on, use, chain, register, route} = router(fallback);
 
-// recursively register folder and subfolders
 register('./routes');
 
-// register custom routes
 // GET: example.com/foo?bier=wurst
-on('get', '/foo', async  (req, res, query, container) => {
+on('get', '/foo', async (req, res, query, container) => {
     // query === {bier: 'wurst'}
     send(res, 200, {foo: 'bar', query, container});
 });
 
-// register middleware
-// executes on every route hit
 use((next) => (req, res, query, container) => {
     container.somedata = 123;
     
@@ -78,6 +97,39 @@ use((next) => (req, res, query, container) => {
     return next(req, res, query, container);
 });
 
-// export route/r to micro
+const middlewares = [
+    (next) => (req, res) => {
+        res.data = [];
+        next(req, res);
+    },
+    (next) => (req, res) => {
+        res.data.push('foobar');
+        next(req, res);
+    },
+];
+ 
+on('get', '/custom', chain(middlewares)(async (req, res) => {
+    // res.data === ['foobar']
+    send(res, 200);
+}));
+
 module.exports = route;
+```
+## Express
+```ecmascript 6
+const router = require('micro-r');
+const express = require('express');
+
+const app = express();
+
+const fallback = (req, res) => {
+    send(res, '404', 'WOOPS');
+};
+
+const {register, route} = router(fallback);
+
+register('./routes');
+
+app.use(route);
+app.listen(3000);
 ```
