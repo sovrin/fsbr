@@ -1,6 +1,6 @@
 {
   "name": "micro-r",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "file structure based router for micro",
   "main": "index.js",
   "scripts": {
