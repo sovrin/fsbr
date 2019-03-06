@@ -4,7 +4,8 @@
   "description": "file structure based router for micro",
   "main": "index.js",
   "scripts": {
-    "test": "tape tests/**/*.test.js | tap-diff",
+    "test": "mocha test --recursive",
+    "test:watch": "mocha test --watch --recursive",
     "prepublish": "npm run test"
   },
   "author": {
@@ -25,9 +26,9 @@
     "router"
   ],
   "devDependencies": {
+    "chai": "^4.2.0",
     "micro": "^9.3.3",
-    "supertest": "^3.4.2",
-    "tap-diff": "^0.1.1",
-    "tape": "^4.10.1"
+    "mocha": "^6.0.2",
+    "supertest": "^3.4.2"
   }
 }
