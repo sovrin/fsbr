@@ -72,6 +72,46 @@ describe('micro-r', () => {
         });
     });
 
+    describe('initialize with fallback and several middlewares', () => {
+        const {on, use, route} = router((req, res) => {
+            send(res, 404, {ok: false});
+        });
+
+        use((next) => (req, res) => {
+            res.data = [];
+
+            next(req, res);
+        });
+
+        use((next) => (req, res) => {
+            res.data.push('foo');
+
+            next(req, res);
+        });
+
+        it('should respond 200 to GET:/custom', (done) => {
+            on('get', '/custom', (req, res) => {
+                send(res, 200, {data: res.data});
+            });
+
+            request(route)
+                .get('/custom')
+                .expect('Content-Type', /json/)
+                .expect({'data': ['foo']})
+                .expect(200, done)
+            ;
+        });
+
+        it('should respond 404 of fallback', (done) => {
+            request(route)
+                .get('/foo')
+                .expect('Content-Type', /json/)
+                .expect({'ok': false})
+                .expect(404, done)
+            ;
+        });
+    });
+
     describe('initialize with fallback and custom middleware chain and binding', () => {
         const {on, chain, route} = router((req, res) => {
             send(res, 404, {ok: false});
