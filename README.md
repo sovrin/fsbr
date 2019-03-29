@@ -72,7 +72,7 @@ registers the following routes
 * `POST:` example.com/user
 
 ## Vanilla
-```ecmascript 6
+```JavaScript
 const router = require('micro-r');
 const {send} = require('micro');
 
@@ -116,7 +116,7 @@ on('get', '/custom', chain(middlewares)(async (req, res) => {
 module.exports = route;
 ```
 ## Express
-```ecmascript 6
+```JavaScript
 const router = require('micro-r');
 const express = require('express');
 
