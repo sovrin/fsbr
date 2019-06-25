@@ -3,4 +3,9 @@
  * Date: 20.02.2019
  * Time: 22:19
  */
-module.exports = require('./lib/router');
+
+const router = require('./lib/router');
+
+module.exports = router;
+exports = router;
+exports.default = router;
