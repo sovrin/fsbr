@@ -146,13 +146,14 @@ describe('micro-r', () => {
     });
 
     describe('register flat folder structure', () => {
-        const {register, route} = router((req, res) => {
+        const {register, route, ready} = router((req, res) => {
             send(res, 404);
         });
 
-        (async () => {
-            await register('./test/fixtures/plain');
-        })();
+        before(done => {
+            register('./test/fixtures/plain', done);
+        });
+
 
         it('should respond 200 to GET:/', (done) => {
             request(route)
@@ -172,14 +173,15 @@ describe('micro-r', () => {
     });
 
     describe('register multiple flat folder structures', () => {
-        const {register, route} = router((req, res) => {
+        const {register, route, ready} = router((req, res) => {
             send(res, 404);
         });
 
-        (async () => {
-            await register('./test/fixtures/nested/a');
-            await register('./test/fixtures/nested/b');
-        })();
+        before(done => {
+            register('./test/fixtures/nested/a', () => {
+                register('./test/fixtures/nested/b', done);
+            });
+        });
 
         it('should respond 200 to GET:/', (done) => {
             request(route)
@@ -208,13 +210,13 @@ describe('micro-r', () => {
     });
 
     describe('register nested folder structure', () => {
-        const {register, route} = router((req, res) => {
+        const {register, route, ready} = router((req, res) => {
             send(res, 404);
         });
 
-        (async () => {
-            await register('./test/fixtures/nested');
-        })();
+        before(done => {
+            register('./test/fixtures/nested', done);
+        });
 
         it('should return 404 from root of fallback', (done) => {
             request(route)
@@ -259,13 +261,13 @@ describe('micro-r', () => {
     });
 
     describe('register flat folder structure with middleware', () => {
-        const {register, route} = router((req, res) => {
+        const {register, route, ready} = router((req, res) => {
             send(res, 404);
         });
 
-        (async () => {
-            await register('./test/fixtures/middleware');
-        })();
+        before(done => {
+            register('./test/fixtures/middleware', done);
+        });
 
         it('should respond 200 to GET:/', (done) => {
             request(route)
@@ -285,8 +287,12 @@ describe('micro-r', () => {
     });
 
     describe('register flat folder structure with middleware and programmatic middleware', () => {
-        const {use, register, route} = router((req, res) => {
+        const {use, register, route, ready} = router((req, res) => {
             send(res, 404);
+        });
+
+        before(done => {
+            register('./test/fixtures/middleware', done);
         });
 
         use((next) => (req, res) => {
@@ -295,9 +301,6 @@ describe('micro-r', () => {
             next(req, res);
         });
 
-        (async () => {
-            await register('./test/fixtures/middleware');
-        })();
 
         it('should respond 200 to GET:/', (done) => {
             request(route)
@@ -317,13 +320,13 @@ describe('micro-r', () => {
     });
 
     describe('register nested folder structure with nested middlewares', () => {
-        const {register, route} = router((req, res) => {
+        const {register, route, ready} = router((req, res) => {
             send(res, 404);
         });
 
-        (async () => {
-            await register('./test/fixtures/nestedmiddleware');
-        })();
+        before(done => {
+            register('./test/fixtures/nestedmiddleware', done);
+        });
 
         it('should respond 200 to GET:/', (done) => {
             request(route)
@@ -377,7 +380,7 @@ describe('micro-r', () => {
             request(route)
                 .get('/w/x/y/z')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['a', 'y', 'z']})
+                .expect({'data': ['a', 'w', 'y', 'z']})
                 .expect(200, done)
             ;
         });
@@ -386,7 +389,7 @@ describe('micro-r', () => {
             request(route)
                 .get('/w/x/y/z/a/b/c/d')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['a', 'y', 'z', 'c', 'd']})
+                .expect({'data': ['a', 'w', 'y', 'z', 'c', 'd']})
                 .expect(200, done)
             ;
         });
