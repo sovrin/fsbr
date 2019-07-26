@@ -19,13 +19,40 @@ describe('micro-r', () => {
             ;
         });
 
-        it('should respond 200 to GET:/custom', (done) => {
-            on('get', '/custom', (req, res) => {
-                send(res, 200);
-            });
+        it('should respond 404 of fallback', (done) => {
+            request(route)
+                .get('/foo')
+                .expect(404, done)
+            ;
+        });
+    });
 
+    describe('initialize with wildcard', () => {
+        const {on, route} = router((req, res) => {
+            send(res, 404);
+        });
+
+        on('*', '/custom', (req, res) => {
+            send(res, 200);
+        });
+
+        it('should respond 200 to GET:/custom', (done) => {
             request(route)
                 .get('/custom')
+                .expect(200, done)
+            ;
+        });
+
+        it('should respond 200 to POST:/custom', (done) => {
+            request(route)
+                .post('/custom')
+                .expect(200, done)
+            ;
+        });
+
+        it('should respond 200 to PUT:/custom', (done) => {
+            request(route)
+                .put('/custom')
                 .expect(200, done)
             ;
         });
