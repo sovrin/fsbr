@@ -1,7 +1,7 @@
 module.exports = [
-    (next) => (req, res) => {
+    (req, res, next) => {
         res.data.push('w');
 
-        return next(req, res);
+        return next();
     },
 ];

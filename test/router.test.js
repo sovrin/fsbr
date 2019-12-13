@@ -4,7 +4,7 @@ const request = require('supertest');
 
 describe('micro-r', () => {
     describe('initialize with fallback', () => {
-        const {on, route} = router((req, res) => {
+        const {on, route, use} = router((req, res) => {
             send(res, 404);
         });
 
@@ -70,10 +70,10 @@ describe('micro-r', () => {
             send(res, 404, {ok: false});
         });
 
-        use((next) => (req, res) => {
+        use((req, res, next) => {
             res.data = 123;
 
-            next(req, res);
+            next();
         });
 
         it('should respond 200 to GET:/custom', (done) => {
@@ -104,16 +104,16 @@ describe('micro-r', () => {
             send(res, 404, {ok: false});
         });
 
-        use((next) => (req, res) => {
+        use((req, res, next) => {
             res.data = [];
 
-            next(req, res);
+            next();
         });
 
-        use((next) => (req, res) => {
+        use((req, res, next) => {
             res.data.push('foo');
 
-            next(req, res);
+            next();
         });
 
         it('should respond 200 to GET:/custom', (done) => {
@@ -145,21 +145,21 @@ describe('micro-r', () => {
         });
 
         const middlewares = [
-            (next) => (req, res) => {
+            (req, res, next) => {
                 res.data = [];
 
-                next(req, res);
+                next();
             },
 
-            (next) => (req, res) => {
+            (req, res, next) => {
                 res.data.push('foobar');
 
-                next(req, res);
+                next();
             },
         ];
 
         it('should respond 200 to GET:/custom', (done) => {
-            on('get', '/custom', chain(middlewares)((req, res) => {
+            on('get', '/custom', chain(...middlewares, (req, res) => {
                 send(res, 200, {data: res.data});
             }));
 
@@ -322,10 +322,10 @@ describe('micro-r', () => {
             register('./test/fixtures/middleware', done);
         });
 
-        use((next) => (req, res) => {
+        use((req, res, next) => {
             res.data = ['baz'];
 
-            next(req, res);
+            next();
         });
 
 
@@ -359,7 +359,7 @@ describe('micro-r', () => {
             request(route)
                 .get('/')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['a']})
+                .expect({'data': ['a1', 'a2']})
                 .expect(200, done)
             ;
         });
@@ -389,7 +389,7 @@ describe('micro-r', () => {
             request(route)
                 .get('/a/b/c/d')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['a', 'c', 'd']})
+                .expect({'data': ['a1', 'a2', 'c', 'd']})
                 .expect(200, done)
             ;
         });
@@ -407,7 +407,7 @@ describe('micro-r', () => {
             request(route)
                 .get('/w/x/y/z')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['a', 'w', 'y', 'z']})
+                .expect({'data': ['a1', 'a2', 'w', 'y', 'z']})
                 .expect(200, done)
             ;
         });
@@ -416,7 +416,7 @@ describe('micro-r', () => {
             request(route)
                 .get('/w/x/y/z/a/b/c/d')
                 .expect('Content-Type', /json/)
-                .expect({'data': ['a', 'w', 'y', 'z', 'c', 'd']})
+                .expect({'data': ['a1', 'a2', 'w', 'y', 'z', 'c', 'd']})
                 .expect(200, done)
             ;
         });

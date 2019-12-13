@@ -24,7 +24,7 @@ Register custom handlers to specific paths.
 
 ## use(middleware)
 Register a middleware function.
-* `middleware` (function); e.g.`(next) => (req, res) => next(req, res)`
+* `middleware` (function); e.g.`(req, res, next) => next()`
 
 ## chain(middlewares)
 Transforms an array of middleware functions into a single middleware function.
@@ -85,26 +85,20 @@ const {on, use, chain, register, route} = router(fallback);
 register('./routes');
 
 // GET: example.com/foo?bier=wurst
-on('get', '/foo', async (req, res, query, container) => {
+on('get', '/foo', async (req, res, query) => {
     // query === {bier: 'wurst'}
-    send(res, 200, {foo: 'bar', query, container});
+    send(res, 200, {foo: 'bar', query});
 });
 
-use((next) => (req, res, query, container) => {
-    container.somedata = 123;
-    
-    // do middleware stuff here
-    return next(req, res, query, container);
-});
 
 const middlewares = [
-    (next) => (req, res) => {
+    (req, res, next) => {
         res.data = [];
-        next(req, res);
+        next();
     },
-    (next) => (req, res) => {
+    (req, res, next) => {
         res.data.push('foobar');
-        next(req, res);
+        next();
     },
 ];
  
