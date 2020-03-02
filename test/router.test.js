@@ -1,10 +1,28 @@
 const {send} = require('micro');
+const {strictEqual} = require('assert');
 const router = require('../lib/router');
 const request = require('supertest');
 
 describe('micro-r', () => {
+    describe('has route', () => {
+        const {on, has} = router();
+        on('get', '/has', () => {});
+
+        it('should return true on existing route', (done) => {
+            strictEqual(has('get', '/has'), true);
+
+            done();
+        });
+
+        it('should return false on non-existing route', (done) => {
+            strictEqual(has('get', '/not'), false);
+
+            done();
+        });
+    });
+
     describe('initialize with fallback', () => {
-        const {on, route, use} = router((req, res) => {
+        const {on, route} = router((req, res) => {
             send(res, 404);
         });
 
