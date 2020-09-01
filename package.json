@@ -1,11 +1,11 @@
 {
   "name": "micro-r",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "file structure based router for micro",
   "main": "index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.prod.json",
     "watch": "tsc --watch",
     "test": "mocha test --recursive",
     "test:watch": "mocha test --watch --recursive",
@@ -27,7 +27,7 @@
   },
   "author": {
     "name": "Oleg Kamlowski",
-    "email": "n@sovrin.de"
+    "email": "oleg.kamlowski@thomann.de"
   },
   "files": [
     "index.js",
