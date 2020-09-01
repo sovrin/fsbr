@@ -10,7 +10,7 @@
     "test": "mocha test --recursive",
     "test:watch": "mocha test --watch --recursive",
     "coverage": "nyc npm run test",
-    "prepublish": "npm run build && npm run test"
+    "prepare": "npm run build && npm run test"
   },
   "nyc": {
     "extension": [
