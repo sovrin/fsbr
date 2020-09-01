@@ -21,6 +21,31 @@ describe('micro-r', () => {
         });
     });
 
+    describe('test configure', () => {
+        const {configure} = router();
+
+        it('should set and return config value', (done) => {
+            let entry = configure('entry');
+            let ext = configure('ext');
+
+            strictEqual(entry, 'index', 'entry is default value');
+            strictEqual(ext, '.js', 'extension is default value');
+
+            configure({
+                entry: 'foo',
+                ext: 'bar',
+            })
+
+            entry = configure('entry');
+            ext = configure('ext');
+
+            strictEqual(entry, 'foo', 'entry is modified value');
+            strictEqual(ext, 'bar', 'extension is modified value');
+
+            done();
+        });
+    });
+
     describe('initialize with fallback', () => {
         const {on, route} = router((req, res) => {
             send(res, 404);
@@ -190,6 +215,34 @@ describe('micro-r', () => {
         });
     });
 
+    describe('register non-existing folder', () => {
+        const {register, route, listener} = router((req, res) => {
+            send(res, 404);
+        });
+
+        let threwError = false;
+
+        before(done => {
+            listener.on(Event.ERROR, () => {
+                threwError = true;
+            });
+
+            register('./test/yeet', done);
+        });
+
+        it('should execute fallback', (done) => {
+            request(route)
+                .get('/yeet')
+                .expect(404)
+                .then(() => {
+                    strictEqual(threwError, true, 'folder was not found and an error was thrown');
+
+                    done();
+                })
+            ;
+        })
+    });
+
     describe('register flat folder structure', () => {
         const {register, route} = router((req, res) => {
             send(res, 404);
@@ -246,6 +299,15 @@ describe('micro-r', () => {
         it('should respond 200 to GET:/c', (done) => {
             request(route)
                 .get('/c')
+                .expect('Content-Type', /json/)
+                .expect({'ok': true})
+                .expect(200, done)
+            ;
+        });
+
+        it('should respond 200 to GET:/c/', (done) => {
+            request(route)
+                .get('/c/')
                 .expect('Content-Type', /json/)
                 .expect({'ok': true})
                 .expect(200, done)
@@ -446,42 +508,54 @@ describe('micro-r', () => {
         });
     });
 
-    describe('listener', () => {
-        const {listener, register, route} = router();
-        let called = [];
+    describe('listener and error handler', () => {
+        const {listener, register, use, route} = router();
+        const called = [];
 
         before(done => {
+            listener.on(Event.READY, () => {
+                called.push('ready');
+            });
+
+            use(() => {
+                throw new Error('middleware throw error');
+            });
+
             register('./test/fixtures/listener', done);
         });
 
-        listener.on(Event.READY, () => {
-            called.push('ready');
+        it('should trigger the middleware error, falling into the fallback routine', (done) => {
+            request(route)
+                .get('/error')
+                .expect(500, done)
+            ;
+        });
+
+        it('should bind and unbind listener', (done) => {
+            const off = listener.on(Event.ERROR, (req, res, {message}) => {
+                send(res, 500, {message});
+            });
+
+            strictEqual(off(), true, 'listener was removed');
+            strictEqual(off(), false, 'listener already removed');
+            done();
         });
 
         it('should trigger listeners', (done) => {
-            const off = listener.on(Event.ERROR, (req, res, {message}) => {
-                send(res, 500, {message});
-
-                called.push('error');
+            listener.on(Event.ERROR, (req, res, {message}) => {
+                called.push(message);
             });
 
             request(route)
                 .get('/error')
-                .expect('Content-Type', /json/)
-                .expect({'message': 'trigger error listener'})
                 .expect(500)
                 .then(() => {
-
-                    off();
-
-                    strictEqual(called.length, 2, 'listeners should be called twice');
+                    strictEqual(called.length, 3, 'listeners should be called trice');
                     strictEqual(called[0], 'ready', 'ready should be called first');
-                    strictEqual(called[1], 'error', 'error should be called second');
+                    strictEqual(called[1], 'middleware throw error', 'middleware error should be called second');
+                    strictEqual(called[2], 'trigger error listener', 'route error should be called third');
 
-                    request(route)
-                        .get('/error')
-                        .expect(200, done)
-                    ;
+                    done();
                 })
             ;
         });

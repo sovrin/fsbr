@@ -1,5 +1,9 @@
 <h1 align="left">micro-r</h1>
 
+[![npm version](https://badge.fury.io/js/micro-r.svg)](https://badge.fury.io/js/micro-r)
+[![Dependency Status](https://david-dm.org/sovrin/micro-r.svg)](https://david-dm.org/sovrin/micro-r)
+[![devDependencies Status](https://david-dm.org/sovrin/micro-r/dev-status.svg)](https://david-dm.org/sovrin/micro-r?type=dev)
+
 file structure based router for micro/express
 
 ***

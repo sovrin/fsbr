@@ -31,16 +31,18 @@ const factory = () => {
      * @param event
      * @param handler
      */
-    const off = (event: Event, handler: Function): void => {
+    const off = (event: Event, handler: Function): boolean => {
         const index = listeners.findIndex((value) => (
             value.event === event && value.handler === handler
         ));
 
         if (index === -1) {
-            return;
+            return false;
         }
 
         listeners.splice(index, 1);
+
+        return true;
     };
 
     /**

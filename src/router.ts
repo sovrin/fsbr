@@ -4,7 +4,7 @@ import listenerFactory, {Event} from './listener';
 import {getter, load, read, setter, stats} from "./utils";
 import {Method, Methods} from "./types/Method";
 import {Route} from "./types/Route";
-import {Config} from "./types/Config";
+import {Config, Keys} from "./types/Config";
 import {Handler} from "./types/Handler";
 import {Middleware} from "./types/Middleware";
 
@@ -22,6 +22,14 @@ const factory = (fallback: Handler = null) => {
         entry: 'index',
         ext: '.js',
     };
+
+    if (!fallback) {
+        fallback = (req, res) => {
+            // last resort
+            res.statusCode = 500;
+            res.end()
+        }
+    }
 
     /**
      *
@@ -55,7 +63,7 @@ const factory = (fallback: Handler = null) => {
             }
 
             try {
-                await step(req, res, next);
+                return await step(req, res, next);
             } catch (error) {
                 listener.emit(Event.ERROR, req, res, error);
 
@@ -141,24 +149,14 @@ const factory = (fallback: Handler = null) => {
         if (has(method as Method, route)) {
             const handler = get(method as Method, route);
 
-            try {
-                return await handler(req, res);
-            } catch (error) {
-                await listener.emit(Event.ERROR, req, res, error);
-                res.end()
-            }
+            return handler(req, res);
         }
 
-        if (fallback) {
-            fallback = chain(...middlewares, fallback);
-        }
+        fallback = chain(...middlewares, fallback);
 
-        try {
-            return fallback && fallback(req, res);
-        } catch (error) {
-            listener.emit(Event.ERROR, req, res, error);
-            res.end()
-        }
+        // no try/catch here
+        // if fallback fails, all hope is lost
+        return fallback(req, res);
     };
 
     /**
@@ -206,8 +204,7 @@ const factory = (fallback: Handler = null) => {
                     middleware = middleware.default;
                 }
 
-                let pathname = path
-                    .replace(base, '')
+                let pathname = path.replace(base, '')
                     .replace(/[\\/]/g, '.')
                     .slice(1)
                 ;
@@ -242,49 +239,44 @@ const factory = (fallback: Handler = null) => {
                     .toLowerCase() as Method
                 ;
 
-                if (!method) {
-                    return;
-                }
-
-                const pathname = path
-                    .replace(base, '')
+                const pathname = path.replace(base, '')
                     .replace(/\\/g, '/')
                 ;
 
                 routes.push({method, pathname, handler});
             };
 
-            for (const file of await read(path)) {
-                await bind(file);
+            try {
+                for (const file of await read(path)) {
+                    await bind(file);
+                }
+            } catch (error) {
+                listener.emit(Event.ERROR, null, null, error);
             }
         };
 
-        try {
-            await traverse(base);
-            await bind();
-            await listener.emit(Event.READY);
-            cb && cb();
+        await traverse(base);
+        await bind();
+        await listener.emit(Event.READY);
+        cb && cb();
 
-            return true;
-        } catch (error) {
-            listener.emit(Event.ERROR, null, null, error);
-            return false;
-        }
+        return true;
     };
 
     /**
      *
-     * @param entries
+     * @param target
      */
-    const configure = (entries: Partial<Config>): void => {
-        for (const key in entries) {
-            if (!entries.hasOwnProperty(key)) {
-                continue;
-            }
-
-            const {[key]: value} = entries;
-            config[key] = value;
+    const configure = (target: Keys | Partial<Config>): any => {
+        if (typeof target === "string") {
+            return config[target];
         }
+
+        for (const key of Object.keys(target)) {
+            config[key] = target[key];
+        }
+
+        return config;
     };
 
     return {
