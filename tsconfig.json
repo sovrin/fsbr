@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES5",
+    "moduleResolution": "Node",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "declaration": true,
+    "composite": true,
+    "declarationMap": true,
+    "lib": [
+      "es2019"
+    ],
+    "paths": {
+    }
+  }
+}

@@ -1,36 +1,23 @@
-const {promisify} = require('util');
-const {readdir, stat} = require('fs');
+import {promisify} from "util";
+import {readdir, stat} from "fs";
 
 /**
  *
- * @type {(arg1: (string | Buffer | URL)) => Promise<string[]>}
  */
-const read = promisify(readdir);
+export const read = promisify(readdir);
 
 /**
  *
- * @type {(arg1: (string | Buffer | URL)) => Promise<Stats>}
  */
-const stats = promisify(stat);
-
-/**
- *
- * @param method
- * @param pathname
- * @returns {string}
- */
-const key = (method, pathname) => (
-    `${method.toUpperCase()}:${(pathname === '') ? '/' : pathname}`
-);
+export const stats = promisify(stat);
 
 /**
  *
  * @param name
  * @param value
  * @param context
- * @returns {undefined}
  */
-const setter = (name, value, context) => {
+export const setter = (name, value, context) => {
     const splits = name.split('.');
     const step = splits.pop();
 
@@ -49,14 +36,12 @@ const setter = (name, value, context) => {
  * @param path
  * @param context
  * @param wildcard
- * @returns {*}
  */
-const getter = (path, context, wildcard) => {
+export const getter = (path, context, wildcard) => {
     const root = context[wildcard];
     const fns = [root];
 
-    path
-        .slice(0)
+    path.slice(0)
         .reduce((acc, step, i, arr) => {
             const {[step]: cursor} = acc;
 
@@ -80,9 +65,8 @@ const getter = (path, context, wildcard) => {
 /**
  *
  * @param path
- * @returns {Promise<any>}
  */
-const load = async (path) => {
+export const load = async (path) => {
     let target;
 
     try {
@@ -96,26 +80,4 @@ const load = async (path) => {
     }
 
     return target;
-};
-
-/**
- *
- */
-const noop = () => {
-    // no operation
-};
-
-/**
- * User: Oleg Kamlowski <oleg.kamlowski@thomann.de>
- * Date: 10.01.2020
- * Time: 08:00
- */
-module.exports = {
-    setter,
-    getter,
-    key,
-    noop,
-    read,
-    load,
-    stats,
 };

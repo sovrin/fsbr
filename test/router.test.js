@@ -1,6 +1,6 @@
 const {send} = require('micro');
 const {strictEqual} = require('assert');
-const router = require('../lib/router');
+const {default: router, Event} = require('../');
 const request = require('supertest');
 
 describe('micro-r', () => {
@@ -191,14 +191,20 @@ describe('micro-r', () => {
     });
 
     describe('register flat folder structure', () => {
-        const {register, route, ready} = router((req, res) => {
+        const {register, route} = router((req, res) => {
             send(res, 404);
         });
 
+        let ready = false;
+
         before(done => {
-            register('./test/fixtures/plain', done);
+            register('./test/fixtures/plain', done).then((value => ready = value));
         });
 
+        it('should be ready', (done) => {
+            strictEqual(ready, true);
+            done();
+        })
 
         it('should respond 200 to GET:/', (done) => {
             request(route)
@@ -218,7 +224,7 @@ describe('micro-r', () => {
     });
 
     describe('register multiple flat folder structures', () => {
-        const {register, route, ready} = router((req, res) => {
+        const {register, route} = router((req, res) => {
             send(res, 404);
         });
 
@@ -255,7 +261,7 @@ describe('micro-r', () => {
     });
 
     describe('register nested folder structure', () => {
-        const {register, route, ready} = router((req, res) => {
+        const {register, route} = router((req, res) => {
             send(res, 404);
         });
 
@@ -306,7 +312,7 @@ describe('micro-r', () => {
     });
 
     describe('register flat folder structure with middleware', () => {
-        const {register, route, ready} = router((req, res) => {
+        const {register, route} = router((req, res) => {
             send(res, 404);
         });
 
@@ -332,7 +338,7 @@ describe('micro-r', () => {
     });
 
     describe('register flat folder structure with middleware and programmatic middleware', () => {
-        const {use, register, route, ready} = router((req, res) => {
+        const {use, register, route} = router((req, res) => {
             send(res, 404);
         });
 
@@ -365,7 +371,7 @@ describe('micro-r', () => {
     });
 
     describe('register nested folder structure with nested middlewares', () => {
-        const {register, route, ready} = router((req, res) => {
+        const {register, route} = router((req, res) => {
             send(res, 404);
         });
 
@@ -436,6 +442,47 @@ describe('micro-r', () => {
                 .expect('Content-Type', /json/)
                 .expect({'data': ['a1', 'a2', 'w', 'y', 'z', 'c', 'd']})
                 .expect(200, done)
+            ;
+        });
+    });
+
+    describe('listener', () => {
+        const {listener, register, route} = router();
+        let called = [];
+
+        before(done => {
+            register('./test/fixtures/listener', done);
+        });
+
+        listener.on(Event.READY, () => {
+            called.push('ready');
+        });
+
+        it('should trigger listeners', (done) => {
+            const off = listener.on(Event.ERROR, (req, res, {message}) => {
+                send(res, 500, {message});
+
+                called.push('error');
+            });
+
+            request(route)
+                .get('/error')
+                .expect('Content-Type', /json/)
+                .expect({'message': 'trigger error listener'})
+                .expect(500)
+                .then(() => {
+
+                    off();
+
+                    strictEqual(called.length, 2, 'listeners should be called twice');
+                    strictEqual(called[0], 'ready', 'ready should be called first');
+                    strictEqual(called[1], 'error', 'error should be called second');
+
+                    request(route)
+                        .get('/error')
+                        .expect(200, done)
+                    ;
+                })
             ;
         });
     });
