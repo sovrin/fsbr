@@ -7,11 +7,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.prod.json",
     "watch": "tsc --watch",
-    "test": "mocha test --recursive",
-    "test:watch": "mocha test --watch --recursive",
-    "coverage": "nyc npm run test",
-    "prepare": "npm run build && npm run test"
-  },
+    "test": "mocha -r ts-node/register/transpile-only --full-trace 'test/**/*.ts'",
+    "coverage": "nyc npm test"
   },
   "author": {
     "name": "Oleg Kamlowski",
