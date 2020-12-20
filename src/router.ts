@@ -43,7 +43,7 @@ const factory = (fallback: Handler = null) => {
     const chain = (...middlewares: Array<Middleware>): Handler => async (req, res): Promise<void> => {
         let cursor = 0;
 
-        middlewares = middlewares.flat()
+        middlewares = [].concat(...middlewares)
             .filter(Boolean)
         ;
 

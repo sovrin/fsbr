@@ -13,9 +13,6 @@
     "composite": true,
     "declarationMap": true,
     "rootDir": "./src/",
-    "lib": [
-      "es2019"
-    ],
     "paths": {
     }
   }

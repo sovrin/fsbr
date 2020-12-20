@@ -53,9 +53,8 @@ export const getter = (path, context, wildcard) => {
         }, context)
     ;
 
-    return fns
+    return [].concat(...fns)
         .filter(Boolean)
-        .flat()
     ;
 };
 
