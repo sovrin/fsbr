@@ -43,8 +43,7 @@ const factory = (fallback: Handler = null) => {
     const chain = (...middlewares: Array<Middleware>): Handler => async (req, res): Promise<void> => {
         let cursor = 0;
 
-        middlewares = middlewares
-            .flat()
+        middlewares = middlewares.flat()
             .filter(Boolean)
         ;
 
@@ -160,8 +159,7 @@ const factory = (fallback: Handler = null) => {
      */
     const bind = async (): Promise<void> => {
         for (let {method, handler, pathname} of routes) {
-            const steps = pathname
-                .split('/')
+            const steps = pathname.split('/')
                 .filter(Boolean)
             ;
 
