@@ -12,18 +12,6 @@
     "coverage": "nyc npm run test",
     "prepare": "npm run build && npm run test"
   },
-  "nyc": {
-    "extension": [
-      ".ts",
-      ".tsx"
-    ],
-    "exclude": [
-      "test",
-      "**/*.d.ts"
-    ],
-    "reporter": [
-      "html"
-    ]
   },
   "author": {
     "name": "Oleg Kamlowski",
