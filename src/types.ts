@@ -8,7 +8,6 @@ export type Config = {
     ext?: string,
 };
 
-
 export type Handler = (req: IncomingMessage, res: ServerResponse) => void;
 
 export type Listener = (req: IncomingMessage, res: ServerResponse, payload: any) => void;
