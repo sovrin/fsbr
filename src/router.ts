@@ -2,11 +2,7 @@ import {parse} from "url";
 import {basename, extname, resolve} from "path";
 import listenerFactory, {Event} from './listener';
 import {getter, load, read, setter, stats} from "./utils";
-import {Method, Methods} from "./types/Method";
-import {Route} from "./types/Route";
-import {Config, Keys} from "./types/Config";
-import {Handler} from "./types/Handler";
-import {Middleware} from "./types/Middleware";
+import {Method, Methods, Route, Config, Keys, Handler, Middleware} from "./types";
 
 /**
  *
@@ -14,8 +10,8 @@ import {Middleware} from "./types/Middleware";
  */
 const factory = (fallback: Handler = null) => {
     const listener = listenerFactory();
-    const bound: {[route: string]: Handler} = {};
-    const handlers: {[route: string]: Handler} = {};
+    const bound: Record<string, Handler> = {};
+    const handlers: Record<string, Handler> = {};
     const routes: Array<Route> = [];
     const middlewares: Array<Middleware> = [];
     const config: Config = {
@@ -184,7 +180,7 @@ const factory = (fallback: Handler = null) => {
      * @param base
      * @param cb
      */
-    const register = async (base, cb: Function = null): Promise<boolean> => {
+    const register = async (base, cb?: Function): Promise<boolean> => {
         const {ext, entry} = config;
 
         base = resolve(base);
