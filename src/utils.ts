@@ -25,10 +25,7 @@ export const setter = (name, value, context) => {
         context = (step in context ? context[step] : context[step] = {});
     }
 
-    return (context && step)
-        ? (context[step] = value)
-        : undefined
-    ;
+    return (context && step) && (context[step] = value);
 };
 
 /**

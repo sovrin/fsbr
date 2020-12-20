@@ -1,7 +1,7 @@
-const {send} = require('micro');
-const {strictEqual} = require('assert');
-const {default: router, Event} = require('../');
-const request = require('supertest');
+import {send} from "micro";
+import {strictEqual} from "assert";
+import router, {Event} from "../src";
+import request from "supertest";
 
 describe('micro-r', () => {
     describe('has route', () => {
@@ -47,7 +47,7 @@ describe('micro-r', () => {
     });
 
     describe('initialize with fallback', () => {
-        const {on, route} = router((req, res) => {
+        const {on, route, use} = router((req, res) => {
             send(res, 404);
         });
 
@@ -66,6 +66,30 @@ describe('micro-r', () => {
             request(route)
                 .get('/foo')
                 .expect(404, done)
+            ;
+        });
+
+        it('should only be called twice', (done) => {
+            let count = 0;
+
+            use((req, res, next) => {
+                // @ts-ignore
+                res.count = ++count;
+
+                next();
+            });
+
+            request(route)
+                .get('/foo')
+                .end(() => {
+                    request(route)
+                        .get('/foo')
+                        .expect((res) => {
+                            strictEqual(count, 2);
+                        })
+                        .end(done)
+                    ;
+                })
             ;
         });
     });
@@ -114,6 +138,7 @@ describe('micro-r', () => {
         });
 
         use((req, res, next) => {
+            // @ts-ignore
             res.data = 123;
 
             next();
@@ -121,6 +146,7 @@ describe('micro-r', () => {
 
         it('should respond 200 to GET:/custom', (done) => {
             on('get', '/custom', (req, res) => {
+                // @ts-ignore
                 send(res, 200, {data: res.data});
             });
 
@@ -148,12 +174,14 @@ describe('micro-r', () => {
         });
 
         use((req, res, next) => {
+            // @ts-ignore
             res.data = [];
 
             next();
         });
 
         use((req, res, next) => {
+            // @ts-ignore
             res.data.push('foo');
 
             next();
@@ -161,6 +189,7 @@ describe('micro-r', () => {
 
         it('should respond 200 to GET:/custom', (done) => {
             on('get', '/custom', (req, res) => {
+                // @ts-ignore
                 send(res, 200, {data: res.data});
             });
 
@@ -203,6 +232,7 @@ describe('micro-r', () => {
 
         it('should respond 200 to GET:/custom', (done) => {
             on('get', '/custom', chain(...middlewares, (req, res) => {
+                // @ts-ignore
                 send(res, 200, {data: res.data});
             }));
 
@@ -409,6 +439,7 @@ describe('micro-r', () => {
         });
 
         use((req, res, next) => {
+            // @ts-ignore
             res.data = ['baz'];
 
             next();

@@ -3,6 +3,7 @@
 [![npm version][npm-src]][npm-href]
 [![types][types-src]][types-href]
 [![size][size-src]][size-href]
+[![coverage][coverage-src]][coverage-href]
 [![Dependencies][dep-src]][dep-href]
 [![devDependencies][devDep-src]][devDep-href]
 [![License][license-src]][license-href]
@@ -201,6 +202,8 @@ SOFTWARE.
 [size-href]: https://badgen.net/packagephobia/install/micro-r
 [types-src]: https://badgen.net/npm/types/micro-r
 [types-href]: https://badgen.net/npm/types/micro-r
+[coverage-src]: https://coveralls.io/repos/github/sovrin/micro-r/badge.svg?branch=master
+[coverage-href]: https://coveralls.io/github/sovrin/micro-r?branch=master
 [dep-src]: https://badgen.net/david/dep/sovrin/micro-r
 [dep-href]: https://badgen.net/david/dep/sovrin/micro-r
 [devDep-src]: https://badgen.net/david/dev/sovrin/micro-r

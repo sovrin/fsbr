@@ -1,5 +1,5 @@
-import {Listener, Handler} from "./types/Listener";
 import {IncomingMessage, ServerResponse} from "http";
+import {Listener, Listeners} from "./types";
 
 export enum Event {
     ERROR = 'error',
@@ -10,30 +10,30 @@ export enum Event {
  *
  */
 const factory = () => {
-    const listeners: Array<Listener> = [];
+    const listeners: Listeners = [];
 
     /**
      *
      * @param event
-     * @param handler
+     * @param listener
      */
-    const on = (event: Event, handler: Handler): Function => {
+    const on = (event: Event, listener: Listener): Function => {
         listeners.push({
             event,
-            handler,
+            listener,
         });
 
-        return () => off(event, handler);
+        return () => off(event, listener);
     }
 
     /**
      *
      * @param event
-     * @param handler
+     * @param listener
      */
-    const off = (event: Event, handler: Function): boolean => {
+    const off = (event: Event, listener: Function): boolean => {
         const index = listeners.findIndex((value) => (
-            value.event === event && value.handler === handler
+            value.event === event && value.listener === listener
         ));
 
         if (index === -1) {
@@ -58,7 +58,7 @@ const factory = () => {
                 continue;
             }
 
-            listener.handler(req, res, payload);
+            listener.listener(req, res, payload);
         }
     };
 
