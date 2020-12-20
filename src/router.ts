@@ -147,11 +147,9 @@ const factory = (fallback: Handler = null) => {
             return handler(req, res);
         }
 
-        fallback = chain(...middlewares, fallback);
-
         // no try/catch here
         // if fallback fails, all hope is lost
-        return fallback(req, res);
+        return chain(...middlewares, fallback)(req, res);
     };
 
     /**
