@@ -658,7 +658,7 @@ describe('micro-r', () => {
 
                 register('./test/fixtures/onlymiddlewares');
 
-                it('should respond with 404 of explicit fallback to handlerless route GET:/proxy/user', (done) => {
+                it('should respond with 404 of explicit fallback to listener-less route GET:/proxy/user', (done) => {
                     request(route)
                         .get('/proxy/user')
                         .expect(404, done)
@@ -667,7 +667,7 @@ describe('micro-r', () => {
             });
         });
 
-        describe('nested middleware folder structure with neste middlewares - fixtures/nestedmiddlewares', () => {
+        describe('nested middleware folder structure with nested middlewares - fixtures/nestedmiddlewares', () => {
             const {register, route} = router((req, res) => {
                 send(res, 404);
             });
@@ -741,7 +741,7 @@ describe('micro-r', () => {
             });
         });
 
-        describe('error handling in middleware - fixtures/listener', () => {
+        describe('error handling in middleware - fixtures/errorhandling', () => {
             describe('inside handler', () => {
                 const errors = [];
                 const {register, route} = router((req, res, error) => {
@@ -751,7 +751,7 @@ describe('micro-r', () => {
                     res.end();
                 });
 
-                register('./test/fixtures/listener');
+                register('./test/fixtures/errorhandling');
 
                 it('should trigger nested middleware error, falling into the internal fallback routine', (done) => {
                     request(route)
@@ -781,7 +781,7 @@ describe('micro-r', () => {
                     throw new Error('middleware throw error');
                 });
 
-                register('./test/fixtures/listener');
+                register('./test/fixtures/errorhandling');
 
                 it('should trigger nested middleware error, falling into the internal fallback routine', (done) => {
                     request(route)
