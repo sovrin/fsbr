@@ -1,15 +1,15 @@
 import cacheFactory from './cache';
-import {Handler, Method, Middleware, Path, Routes, Tokens} from "./types";
+import {Listener, Method, Middleware, Path, Routes, Tokens} from "./types";
 
 const VARIABLE = ':';
 const PATH = '/';
 const WILDCARD = '*';
 
-export const HANDLER = Symbol.for('handler');
+export const LISTENER = Symbol.for('listener');
 
 enum Type {
     MIDDLEWARE = '#',
-    HANDLER = '$'
+    LISTENER = '$'
 }
 
 /**
@@ -44,10 +44,10 @@ const factory = () => {
     /**
      *
      * @param tokens
-     * @param handler
+     * @param listener
      * @param routes
      */
-    const up = (tokens: Tokens, handler: Handler | Middleware, routes: Routes) => {
+    const up = (tokens: Tokens, listener: Listener | Middleware, routes: Routes) => {
         const token = tokens.shift();
 
         if (!token) {
@@ -59,10 +59,10 @@ const factory = () => {
         }
 
         if (tokens.length === 0) {
-            routes[token][HANDLER] = handler;
+            routes[token][LISTENER] = listener;
         }
 
-        return up(tokens, handler, routes[token]);
+        return up(tokens, listener, routes[token]);
     };
 
     /**
@@ -70,13 +70,13 @@ const factory = () => {
      * @param tokens
      * @param routes
      */
-    const down = (tokens: Tokens, routes: Routes): Handler | Middleware => {
+    const down = (tokens: Tokens, routes: Routes): Listener | Middleware => {
         let token = tokens.shift();
 
         if (!token) {
-            return routes[HANDLER];
+            return routes[LISTENER];
         } else if (routes[WILDCARD]) {
-            return routes[WILDCARD][HANDLER];
+            return routes[WILDCARD][LISTENER];
         } else if (!routes[token]) {
             token = keys(routes)
                 .find((route) => route[0] === VARIABLE)
@@ -94,15 +94,15 @@ const factory = () => {
      *
      * @param method
      * @param path
-     * @param handler
+     * @param listener
      */
-    const set = (method: Method, path: Path, handler: Handler | Middleware) => {
-        const type = !method && Type.MIDDLEWARE || Type.HANDLER;
+    const set = (method: Method, path: Path, listener: Listener | Middleware) => {
+        const type = !method && Type.MIDDLEWARE || Type.LISTENER;
         const tokens = tokenize(type, method, path);
 
         cache.del(tokens);
 
-        up(tokens, handler, routes);
+        up(tokens, listener, routes);
     };
 
     /**
@@ -149,7 +149,7 @@ const factory = () => {
      * @param path
      */
     const resolve = (method: Method, path: Path) => {
-        const tokens = tokenize(Type.HANDLER, method, path);
+        const tokens = tokenize(Type.LISTENER, method, path);
 
         const context = {};
         let level = 0;
@@ -181,8 +181,8 @@ const factory = () => {
      * @param method
      * @param path
      */
-    const get = (method: Method, path: Path): Handler | Middleware => {
-        const type = !method && Type.MIDDLEWARE || Type.HANDLER;
+    const get = (method: Method, path: Path): Listener | Middleware => {
+        const type = !method && Type.MIDDLEWARE || Type.LISTENER;
         const token = tokenize(type, method, path);
 
         return down(token, routes);

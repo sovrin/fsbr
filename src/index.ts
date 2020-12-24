@@ -2,13 +2,13 @@ import {parse} from "url";
 import {readdirSync, statSync} from "fs";
 import {basename, extname, resolve} from "path";
 import routesFactory from './routes';
-import {Method, Config, Keys, Handler, Middleware, Router, Middlewares, Methods, Path} from "./types";
+import {Method, Config, Keys, Listener, Middleware, Router, Middlewares, Methods, Path} from "./types";
 
 /**
  *
  * @param fallback
  */
-const factory = (fallback: Handler = null): Router => {
+const factory = (fallback: Listener = null): Router => {
     const routes = routesFactory();
     const middlewares: Middlewares = [];
     const config: Config = {
@@ -37,11 +37,11 @@ const factory = (fallback: Handler = null): Router => {
 
     /**
      *
-     * @param handlers
+     * @param listeners
      */
-    const chain = (...handlers: Array<Function>): Handler => {
+    const chain = (...listeners: Array<Function>): Listener => {
         return async (req, res, variables): Promise<void> => {
-            handlers = [].concat(...handlers)
+            listeners = [].concat(...listeners)
                 .filter(Boolean)
             ;
 
@@ -49,14 +49,14 @@ const factory = (fallback: Handler = null): Router => {
              *
              */
             const next = async () => {
-                const handler = handlers.shift();
-                const param = (handlers.length === 0)
+                const listener = listeners.shift();
+                const param = (listeners.length === 0)
                     ? variables
                     : next
                 ;
 
                 try {
-                    return await handler(req, res, param);
+                    return await listener(req, res, param);
                 } catch (error) {
                     return await fallback(req, res, error);
                 }
@@ -70,26 +70,26 @@ const factory = (fallback: Handler = null): Router => {
      *
      * @param method
      * @param path
-     * @param handler
+     * @param listener
      */
-    const on = (method: Method, path: string, handler: Handler): void => {
+    const on = (method: Method, path: string, listener: Listener): void => {
         if (method === '*') {
             for (const method of Methods) {
                 if (method === '*') {
                     continue;
                 }
 
-                on(method, path, handler);
+                on(method, path, listener);
             }
 
             return;
         }
 
         if (middlewares.length) {
-            handler = chain(...middlewares, handler);
+            listener = chain(...middlewares, listener);
         }
 
-        routes.set(method, path as Path, handler);
+        routes.set(method, path as Path, listener);
     };
 
     /**
@@ -115,12 +115,12 @@ const factory = (fallback: Handler = null): Router => {
      * @param req
      * @param res
      */
-    const route: Handler = async (req, res): Promise<any> => {
+    const route: Listener = async (req, res): Promise<any> => {
         const {url, method} = req;
         const {pathname} = parse(url, true) as any;
-        const handler = routes.get(method, pathname);
+        const listener = routes.get(method, pathname);
 
-        if (!handler) {
+        if (!listener) {
             return chain(...middlewares, fallback)(req, res);
         }
 
@@ -129,7 +129,7 @@ const factory = (fallback: Handler = null): Router => {
             .concat(routes.reduce(pathname))
         ;
 
-        return chain(...waterfall, handler)(req, res, resolved);
+        return chain(...waterfall, listener)(req, res, resolved);
     };
 
     /**
@@ -182,10 +182,10 @@ const factory = (fallback: Handler = null): Router => {
                     return;
                 }
 
-                let handler = require(pointer);
+                let listener = require(pointer);
 
-                if (handler.default && typeof handler.default === 'function') {
-                    handler = handler.default;
+                if (listener.default && typeof listener.default === 'function') {
+                    listener = listener.default;
                 }
 
                 const method = basename(name, ext)
@@ -197,7 +197,7 @@ const factory = (fallback: Handler = null): Router => {
                     .replace(/\[(.*?)\]/g, ':$1') as Path
                 ;
 
-                routes.set(method, pathname, handler);
+                routes.set(method, pathname, listener);
             };
 
             for (const file of readdirSync(path)) {

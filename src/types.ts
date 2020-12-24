@@ -1,5 +1,5 @@
 import {IncomingMessage, ServerResponse} from "http";
-import {HANDLER} from "./routes";
+import {LISTENER} from "./routes";
 
 export type Request = IncomingMessage & {
     method: Method,
@@ -14,8 +14,8 @@ export type Path = string & {
 export type Router = {
     use(middleware: Middleware): void,
     has(method: Method, path: string): boolean,
-    on(method: Method, path: string, handler: Handler): void,
-    chain(...middlewares: Middlewares): Handler,
+    on(method: Method, path: string, listener: Listener): void,
+    chain(...middlewares: Middlewares): Listener,
     route(req: Request, res: Response): Promise<any>,
     register(base: string, cb?: Function): void,
     configure(target: Keys | Partial<Config>): any,
@@ -36,7 +36,7 @@ export type Cache = {
     del(tokens: Array<string>),
 }
 
-export type Handler = (req: Request, res: Response, variables?: object) => any;
+export type Listener = (req: Request, res: Response, variables?: object) => any;
 
 export type Method = typeof Methods[number];
 
@@ -60,6 +60,6 @@ export type Token = string;
 export type Tokens = Array<Token>;
 
 export type Routes = {
-    [HANDLER]?: Handler | Middleware
+    [LISTENER]?: Listener | Middleware
     [key: string]: Routes;
 }
