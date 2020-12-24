@@ -1,3 +1,3 @@
 module.exports = async (req, res) => {
-    throw new Error('trigger error listener');
+    throw new Error('handler throw error');
 };
