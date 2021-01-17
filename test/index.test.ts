@@ -3,7 +3,7 @@ import request from "supertest";
 import assert from "assert";
 import router from "../src";
 
-describe('micro-r', () => {
+describe('fsbr', () => {
     /**
      *
      */
