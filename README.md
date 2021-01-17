@@ -8,83 +8,200 @@
 [![devDependencies][devDep-src]][devDep-href]
 [![License][license-src]][license-href]
 
-file structure based router for micro/express
+> file structure based router for HTTP servers
 
-***
-# Installation
-
+## Installation
 ```bash
 $ npm i micro-r
 ```
 
-# About
-micro-r is a small and opinionated routing library utilizing file/folder of the application.
-Routes are not dynamic and are bound at runtime, rendering "Directory Traversal Attacks" not applicable.
+## Usage
 
-Middlewares can be defined by use() or by dropping index.js files in the desired folders. These must export either a plain middleware function or an array of functions.
+### Native
+```js
+import router from 'micro-r';
+import {createServer} from 'http';
 
-# Functions
-## configure(object)
-Provides the possibility to change the following defaults.
-* `ext: string` extension of middleware files e.g.`.ts`; default: `.js`
-* `entry: string` name of middleware files e.g.`middleware`; default: `index`
+const {use, register, route} = router();
 
-## on(method, path, handler)
-Register custom handlers to specific paths.
-* `method: string` one of: `*, get, post, put, patch, delete, head, options`
-* `path: string` pathname to match
-* `handler: Function` callback function receiving req and res as parameters
+use((req, res, next) => {
+    //
+    next();
+});
 
-## use(middleware)
-Register a middleware function.
-* `middleware: Function` e.g.`(req, res, next) => next()`
+register('./routes');
 
-## has(method, path)
-Returns true of the requested route exists.
-* `method: string` one of: `*, get, post, put, patch, delete, head, options`
-* `path: string` pathname
+const server = createServer(route);
+server.listen(8080);
+```
 
-## chain(middlewares)
+### Express
+```js
+import router from 'micro-r';
+import express from 'expess';
+
+const app = express();
+const {use, register, route} = router();
+
+use((req, res, next) => {
+    //
+    next();
+});
+register('./routes');
+
+app.use(route);
+app.listen(3000);
+```
+
+## API
+- <a href="#ctor"><code><b>microR(config)</b></code></a>
+- <a href="#routerOn"><code>router.<b>on()</b></code></a>
+- <a href="#routerHas"><code>router.<b>has()</b></code></a>
+- <a href="#routerUse"><code>router.<b>use()</b></code></a>
+- <a href="#routerChain"><code>router.<b>chain()</b></code></a>
+- <a href="#routerRoute"><code>router.<b>route()</b></code></a>
+- <a href="#routerRegister"><code>router.<b>register()</b></code></a>
+
+<a name="library"></a>
+### Library
+
+<a name="ctor"></a>
+### `microR(config: Config)`
+#### `Config`
+|         | default | description
+| :------ | :------ | :----------
+| `ext`   | .js     | extension of middleware/listener files
+| `entry` | index   | name of middleware files e.g. `middleware`
+| `dev`   | false   | print errors in default fallback handle
+
+Creates a new `microR` instance.
+```javascript
+import router from 'micro-r';
+
+const {on, use, chain, register, route} = router();
+```
+
+***
+
+<a name="routerOn"></a>
+#### `router.on(method, path, listener)`
+Registers a route to the router. A Method can be any known [`HTTP method/verb`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) or a wildcard `*`.
+Paths can contain a variable, denoted with a semicolon. In this case, listeners receive a third optional argument with the resolved variables. Paths can also have a wildcard. microR will match every request after that. 
+
+```javascript
+const {on} = router();
+
+// plain route
+on('POST', '/post', (req, res) => {
+    //
+});
+
+// route with id parameter
+on('GET', '/user/:id', (req, res, params) => {
+    const {id} = params;
+});
+
+// route with wildcard method
+// any request with any HTTP method/verb on this route executes the listener
+on('*', '/foo', (req, res) => {
+    //
+});
+
+// route with wildcard in pathname
+// any request with '/proxy/...' executes the listener
+on('GET', '/proxy/*', (req, res) => {
+    //
+});
+```
+
+***
+
+<a name="routerHas"></a>
+#### `router.has(method, path)`
+Returns true, if the bound route exists.
+```javascript
+const {has} = router();
+
+has('POST', '/post');
+```
+
+***
+
+<a name="routerUse"></a>
+#### `router.use(middleware)`
+Registers a middleware function to the router. Middlewares with 4 parameters are considered as error listeners.
+Note the order. The error parameter here should be on the fourth place, unlike in frameworks like express.
+```javascript
+const {use} = router();
+
+// normal middleware
+use('POST', '/post', (req , res, next) => {
+    // do middleware things
+    next();
+});
+
+// middleware for errorhandling
+// notice the fourth and last argument "error"
+use('get', '/photos', (req, res, next, error) => {
+    // handle error
+    console.error(error);
+    next();
+});
+```
+
+***
+
+<a name="routerChain"></a>
+#### `router.chain(...middlewares)`
 Transforms an array of middleware functions into a single middleware function.
-* `middlewares: Array<Function>` similar to use() but with arrays
+```javascript
+const {chain, on} = router();
 
-## register(basepath, onDone)
-Recursively register the given path and its subfolders.
-* `basepath: string` path to folder
-* `onDone: Function` optional; called if registration done
+const middlewares = [
+    (req, res, next) => {
+        res.data = [];
+        next();
+    },
+    (req, res, next) => {
+        res.data.push('foobar');
+        next();
+    },
+];
 
-## route(req, res)
+on('GET', '/custom', chain(...middlewares, (req, res) => {
+    console.log(res.data); // ['foobar']
+}));
+```
+
+***
+
+<a name="routerRoute"></a>
+#### `router.route(req, res)`
 Handle the incoming requests.
-* `req: IncomingMessage` server request object
-* `res: ServerResponse` server response object
+```javascript
+const {route} = router();
 
-## listener
-`listener` Instance exposes three functions to bind, unbind and emit events.
+const server = createServer((req, res) => {
+    route(req, res);
+});
+server.listen(8080);
+```
 
-### Events
-Following `Events` are available:
-* `Ready` if micro-r is done with `register()`
-* `Error` if an uncatched error in middleware, route or `register` call occurred 
+***
 
-### on(event, handler)
-Register an event handler.
-* `event: string` name of the event
-* `handler: function` event handler
+<a name="routerRegister"></a>
+#### `router.register(base, cb)`
+Recursively register all routes within the `base` folder and call the optional callback when finished.
+Each subdirectory represents a part of the URL pathname. Each subdirectory can have an `index` file exporting one or an array of middlewares.
+Listeners are named by [`HTTP methods/verbs`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) and export a default listening function.
+```javascript
+const {has} = router();
 
-### off(event, handler)
-Unregister an event handler.
-* `event: string` name of the event
-* `handler: function` event handler
+has('POST', '/post');
 
-### emit(event, req, res, payload)
-Emit an event with payload.
-* `event: string` name of the event
-* `req: IncomingMessage` server request object
-* `res: ServerResponse` server response object
-* `payload: any` any kind of data
-
-# Example
-Following folder/file structure with default configuration
+```
+#### Example
+Registering the following folder/file structure with default configuration:
 ```
 routes
 |
@@ -106,7 +223,7 @@ routes
 └───user
         post.js
 ```
-registers the following routes
+Would bind the following routes:
 * `GET:` example.com/api
 * `GET:` example.com/photo
 * `POST:` example.com/photo
@@ -115,86 +232,13 @@ registers the following routes
 * `POST:` example.com/photo/vacation
 * `POST:` example.com/user
 
-## Vanilla
-```JavaScript
-const {default: router, Event} = require('micro-r');
-const {send} = require('micro');
-
-const fallback = (req, res) => {
-    send(res, '404', 'WOOPS');
-};
-
-const {on, use, chain, register, route, listener} = router(fallback);
-
-listener.on(Event.READY, () => console.info('I\'m ready'));
-listener.on(Event.ERROR, (req, res, error) => console.error(req, res, error));
-
-register('./routes');
-
-on('get', '/foo', async (req, res) => {
-    send(res, 200);
-});
-
-const middlewares = [
-    (req, res, next) => {
-        res.data = [];
-        next();
-    },
-    (req, res, next) => {
-        res.data.push('foobar');
-        next();
-    },
-];
- 
-on('get', '/custom', chain(middlewares)(async (req, res) => {
-    // res.data === ['foobar']
-    send(res, 200);
-}));
-
-module.exports = route;
-```
-## Express
-```JavaScript
-const {default: router, Event} = require('micro-r');
-const express = require('express');
-
-const app = express();
-
-const fallback = (req, res) => {
-    send(res, '404', 'WOOPS');
-};
-
-const {register, route, listener} = router(fallback);
-
-register('./routes', () => console.info('I\'m ready'));
-
-app.use(route);
-app.listen(3000);
-```
+A GET call to `/photo/vacation` would execute the following files: 
+* `photo/index.js`
+* `photo/vacation/index.js`
+* `photo/vacation/get.js`
 
 # Licence
-MIT License
-
-Copyright (c) 2019 Oleg Kamlowski
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
+MIT License, see [LICENSE](./LICENSE)
 
 [npm-src]: https://badgen.net/npm/v/micro-r
 [npm-href]: https://www.npmjs.com/package/micro-r
