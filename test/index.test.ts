@@ -29,88 +29,15 @@ describe('micro-r', () => {
         });
     });
 
-    describe('configure', () => {
-        const {configure} = router();
-
-        it('should set and return config value', (done) => {
-            let entry = configure('entry');
-            let ext = configure('ext');
-
-            assert(entry === 'index', 'entry is not the default value');
-            assert(ext === '.js', 'extension is not the default value');
-
-            configure({
-                entry: 'foo',
-                ext: 'bar',
-            });
-
-            entry = configure('entry');
-            ext = configure('ext');
-
-            assert(entry === 'foo', 'entry is not the modified value');
-            assert(ext === 'bar', 'extension is not modified value');
-
-            done();
-        });
-    });
-
-    describe('configure/route/use/on', () => {
-        it('should print out error', (done) => {
-            const {configure, use, on, route} = router();
-            configure({dev: true});
-
-            use(() => {
-                throw new Error('middleware error');
-            });
-
-            on('GET', '/custom', noop);
-
-            request(route)
-                .get('/custom')
-                .expect(500)
-                .then(res => {
-                    assert(res.body.message === "middleware error", 'response body differs from expectation');
-
-                    done();
-                })
-            ;
-        });
-    });
-
     describe('on/route', () => {
         describe('fallback', () => {
-            describe('without', () => {
-                const {on, route} = router();
-                on('GET', '/custom', (req, res) => {
-                    send(res, 200);
-                });
+            const {route} = router();
 
-                it('should respond with 200 to GET:/custom', (done) => {
-                    request(route)
-                        .get('/custom')
-                        .expect(200, done)
-                    ;
-                });
-
-                it('should respond with 500 from internal fallback to GET:/unknown', (done) => {
-                    request(route)
-                        .get('/unknown')
-                        .expect(500, done)
-                    ;
-                });
-            });
-
-            describe('with', () => {
-                const {route} = router((req, res) => {
-                    send(res, 500);
-                });
-
-                it('should respond with 500 from explicit fallback to GET:/unknown', (done) => {
-                    request(route)
-                        .get('/unknown')
-                        .expect(500, done)
-                    ;
-                });
+            it('should respond with fallback to GET:/unknown', (done) => {
+                request(route)
+                    .get('/unknown')
+                    .expect(500, done)
+                ;
             });
         });
 
@@ -128,7 +55,7 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 500 from internal fallback to GET:/api/user', (done) => {
+            it('should respond with 500 from fallback to GET:/api/user', (done) => {
                 request(route)
                     .get('/api/user')
                     .expect(500, done)
@@ -139,8 +66,8 @@ describe('micro-r', () => {
         describe('wildcard url and url variable', () => {
             const {on, route} = router();
 
-            on('GET', '/api/:user/*', (req, res, match) => {
-                send(res, 200, match);
+            on('GET', '/api/:user/*', (req, res, param) => {
+                send(res, 200, param);
             });
 
             it('should pass through with 200 to GET:/api/user/a/b/c/d with match', (done) => {
@@ -152,7 +79,7 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 500 from internal fallback to GET:/api/joe', (done) => {
+            it('should respond with 500 from fallback to GET:/api/joe', (done) => {
                 request(route)
                     .get('/api/joe')
                     .expect(500, done)
@@ -213,14 +140,14 @@ describe('micro-r', () => {
                 send(res, 200);
             });
 
-            it('should respond with 500 from internal fallback to GET:/:id/:id...', (done) => {
+            it('should respond with 500 from fallback to GET:/:id/:id...', (done) => {
                 request(route)
                     .get('/:id'.repeat(100))
                     .expect(500, done)
                 ;
             });
 
-            it('should respond with 500 from internal fallback to GET:/:id/custom/:id...', (done) => {
+            it('should respond with 500 from fallback to GET:/:id/custom/:id...', (done) => {
                 request(route)
                     .get('/:id/custom'.repeat(100))
                     .expect(500, done)
@@ -262,12 +189,51 @@ describe('micro-r', () => {
     });
 
     describe('on/route/use', () => {
-        describe('use middleware', () => {
-            const {on, use, route} = router((req, res) => {
-                // @ts-ignore
-                send(res, 404, {data: res.data, calls: callCount});
+        describe('usages are order dependent', () => {
+            it('should not execute any middleware', (done) => {
+                const {on, route} = router();
+
+                on('GET', '/custom', (req, res) => {
+                    // @ts-ignore
+                    send(res, 200, {data: res.data || false});
+                });
+
+                request(route)
+                    .get('/custom')
+                    .expect('Content-Type', /json/)
+                    .expect({'data': false})
+                    .expect(200, done)
+                ;
             });
 
+            describe('later bound middlewares are ignored', () => {
+                const {on, use, route} = router();
+
+                on('GET', '/custom', (req, res) => {
+                    // @ts-ignore
+                    send(res, 200, {data: res.data || false});
+                });
+
+                use((req, res, next) => {
+                    // @ts-ignore
+                    res.data = 123;
+
+                    next();
+                });
+
+                it('should not execute any middleware', (done) => {
+                    request(route)
+                        .get('/custom')
+                        .expect('Content-Type', /json/)
+                        .expect({'data': false})
+                        .expect(200, done)
+                    ;
+                });
+            });
+        });
+
+        describe('use middleware', () => {
+            const {on, use, route} = router();
             let callCount = 0;
 
             on('GET', '/custom', (req, res) => {
@@ -284,6 +250,11 @@ describe('micro-r', () => {
                 next();
             });
 
+            on('GET', '/custom', (req, res) => {
+                // @ts-ignore
+                send(res, 200, {data: res.data, calls: callCount});
+            });
+
             it('should respond with 200 to GET:/custom with data of middleware', (done) => {
                 callCount = 0;
 
@@ -295,14 +266,12 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 from explicit fallback with data of middleware', (done) => {
+            it('should respond with fallback with data of middleware', (done) => {
                 callCount = 0;
 
                 request(route)
                     .get('/foo')
-                    .expect('Content-Type', /json/)
-                    .expect({'data': 123, 'calls': 1})
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
 
@@ -324,18 +293,69 @@ describe('micro-r', () => {
             });
         });
 
+        describe('use error middleware', () => {
+            describe('by throw Error', () => {
+                const {on, use, route} = router({dev: true});
+
+                use(() => {
+                    throw new Error('throw new whoops');
+                });
+
+                use((req, res, next, error) => {
+                    // @ts-ignore
+                    res.error = error.message;
+
+                    next(error);
+                });
+
+                on('GET', '/custom', (req, res, next) => {
+                    // @ts-ignore
+                    next(res.error);
+                });
+
+                it('should respond with 200 to GET:/custom with data of middleware', (done) => {
+                    request(route)
+                        .get('/custom')
+                        .expect('Content-Type', /json/)
+                        .expect('"throw new whoops"')
+                        .expect(500, done)
+                    ;
+                });
+            });
+
+            describe('by passing error', () => {
+                const {on, use, route} = router();
+
+                use((req, res, next) => {
+                    next('whoops');
+                });
+
+                use((req, res, next, error) => {
+                    // @ts-ignore
+                    res.error = error;
+
+                    next();
+                });
+
+                on('GET', '/custom', (req, res) => {
+                    // @ts-ignore
+                    send(res, 200, {error: res.error});
+                });
+
+                it('should respond with 200 to GET:/custom with data of middleware', (done) => {
+                    request(route)
+                        .get('/custom')
+                        .expect('Content-Type', /json/)
+                        .expect({'error': 'whoops'})
+                        .expect(200, done)
+                    ;
+                });
+            });
+        });
+
         describe('use several middlewares', () => {
-            const {on, use, route} = router((req, res) => {
-                // @ts-ignore
-                send(res, 404, {data: res.data, calls: callCount});
-            });
-
+            const {on, use, route} = router();
             let callCount = 0;
-
-            on('GET', '/custom', (req, res) => {
-                // @ts-ignore
-                send(res, 200, {data: res.data, calls: callCount});
-            });
 
             use((req, res, next) => {
                 // @ts-ignore
@@ -357,6 +377,11 @@ describe('micro-r', () => {
                 next();
             });
 
+            on('GET', '/custom', (req, res) => {
+                // @ts-ignore
+                send(res, 200, {data: res.data, calls: callCount});
+            });
+
             it('should respond with 200 to GET:/custom with data of middleware', (done) => {
                 callCount = 0;
 
@@ -368,14 +393,12 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 from explicit fallback with data of middleware', (done) => {
+            it('should fallback with data of middleware', (done) => {
                 callCount = 0;
 
                 request(route)
                     .get('/foo')
-                    .expect('Content-Type', /json/)
-                    .expect({'data': ['foo'], calls: 2})
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
 
@@ -396,6 +419,27 @@ describe('micro-r', () => {
                 ;
             });
         });
+
+        describe('trigger final handler twice', () => {
+            const {on, route, use} = router();
+
+            use((req, res, next, error) => {
+                send(res, 500);
+
+                next();
+            });
+
+            on('GET', '/custom', () => {
+                throw new Error();
+            });
+
+            it('should respond with 500 from fallback to GET:/:id/:id...', (done) => {
+                request(route)
+                    .get('/custom')
+                    .expect(500, done)
+                ;
+            });
+        })
     });
 
     describe('register', () => {
@@ -418,9 +462,7 @@ describe('micro-r', () => {
         });
 
         describe('flat folder structure - fixtures/plain', () => {
-            const {register, route} = router((req, res) => {
-                send(res, 404);
-            });
+            const {register, route} = router();
 
             register('./test/fixtures/plain');
 
@@ -433,18 +475,16 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route', (done) => {
+            it('should respond with fallback to unknown route', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
 
         describe('dynamic url parameter folder structure - fixtures/dynamic', () => {
-            const {register, route} = router((req, res) => {
-                send(res, 404);
-            });
+            const {register, route} = router();
 
             register('./test/fixtures/dynamic');
 
@@ -466,25 +506,23 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/foo', (done) => {
+            it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/user/foo/bar', (done) => {
+            it('should respond with fallback to unknown route GET:/user/foo/bar', (done) => {
                 request(route)
                     .get('/user/foo/bar')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
 
         describe('nested folder structure - fixtures/nested', () => {
-            const {register, route} = router((req, res) => {
-                send(res, 404);
-            });
+            const {register, route} = router();
 
             register('./test/fixtures/nested');
 
@@ -497,14 +535,14 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should with respond 404 to GET:/b', (done) => {
+            it('should with respond with fallback to GET:/b', (done) => {
                 request(route)
                     .get('/b')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
 
-            it('should with respond 200 to GET:/b/c', (done) => {
+            it('should with respond with fallback to GET:/b/c', (done) => {
                 request(route)
                     .get('/a')
                     .expect('Content-Type', /json/)
@@ -522,18 +560,16 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/foo', (done) => {
+            it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
 
         describe('multiple flat folder structures - fixtures/nested/[a|b]', () => {
-            const {register, route} = router((req, res) => {
-                send(res, 404);
-            });
+            const {register, route} = router();
 
             register('./test/fixtures/nested/a');
             register('./test/fixtures/nested/b');
@@ -565,18 +601,16 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/foo', (done) => {
+            it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
 
         describe('flat folder structure with middleware - fixtures/middleware', () => {
-            const {register, route} = router((req, res) => {
-                send(res, 404);
-            });
+            const {register, route} = router();
 
             register('./test/fixtures/middleware');
 
@@ -589,20 +623,16 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/foo', (done) => {
+            it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
 
         describe('flat folder structure with mixed middlewares - fixtures/middleware', () => {
-            const {use, register, route} = router((req, res) => {
-                send(res, 404);
-            });
-
-            register('./test/fixtures/middleware');
+            const {use, register, route} = router();
 
             use((req, res, next) => {
                 // @ts-ignore
@@ -610,6 +640,8 @@ describe('micro-r', () => {
 
                 next();
             });
+
+            register('./test/fixtures/middleware');
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
@@ -620,19 +652,17 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/foo', (done) => {
+            it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
 
         describe('middlewares only folder structure - fixtures/onlymiddlewares', () => {
             describe('with wildcard route', () => {
-                const {register, on, route} = router((req, res) => {
-                    send(res, 404);
-                });
+                const {register, on, route} = router();
 
                 on('GET', '/proxy/*', (req, res) => {
                     // @ts-ignore
@@ -652,25 +682,21 @@ describe('micro-r', () => {
             });
 
             describe('without wildcard route', () => {
-                const {register, route} = router((req, res) => {
-                    send(res, 404);
-                });
+                const {register, route} = router();
 
                 register('./test/fixtures/onlymiddlewares');
 
-                it('should respond with 404 of explicit fallback to listener-less route GET:/proxy/user', (done) => {
+                it('should respond with fallback to listener-less route GET:/proxy/user', (done) => {
                     request(route)
                         .get('/proxy/user')
-                        .expect(404, done)
+                        .expect(500, done)
                     ;
                 });
             });
         });
 
         describe('nested middleware folder structure with nested middlewares - fixtures/nestedmiddlewares', () => {
-            const {register, route} = router((req, res) => {
-                send(res, 404);
-            });
+            const {register, route} = router();
 
             register('./test/fixtures/nestedmiddlewares');
 
@@ -683,17 +709,17 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 to GET:/a/b', (done) => {
+            it('should respond with fallback to GET:/a/b', (done) => {
                 request(route)
                     .get('/a/b')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
 
-            it('should respond with 404 to GET:/a/b/c', (done) => {
+            it('should respond with fallback to GET:/a/b/c', (done) => {
                 request(route)
                     .get('/a/b/c')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
 
@@ -733,10 +759,10 @@ describe('micro-r', () => {
                 ;
             });
 
-            it('should respond with 404 of explicit fallback to unknown route GET:/foo', (done) => {
+            it('should respond with 404 fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(404, done)
+                    .expect(500, done)
                 ;
             });
         });
@@ -744,22 +770,33 @@ describe('micro-r', () => {
         describe('error handling in middleware - fixtures/errorhandling', () => {
             describe('inside handler', () => {
                 const errors = [];
-                const {register, route} = router((req, res, error) => {
+                const {register, route, use} = router();
+
+                use((req, res, next, error) => {
                     errors.push(error);
 
-                    res.statusCode = 404;
-                    res.end();
+                    next(error);
                 });
+
+                use((req, res, next, error) => {
+                    errors.push(error);
+
+                    next(error);
+                });
+
+                use((req, res, next) => {
+                    next();
+                })
 
                 register('./test/fixtures/errorhandling');
 
-                it('should trigger nested middleware error, falling into the internal fallback routine', (done) => {
+                it('should trigger nested middleware error, falling into the fallback routine', (done) => {
                     request(route)
                         .get('/error')
-                        .expect(404, () => {
+                        .expect(500, () => {
                             const [error] = errors;
 
-                            assert(errors.length === 1, 'only one error should be thrown');
+                            assert(errors.length === 2, 'only one error should be thrown');
                             assert(error.message === "handler throw error", 'thrown error differs from expectation');
 
                             done();
@@ -770,26 +807,31 @@ describe('micro-r', () => {
 
             describe('inside middleware', () => {
                 const errors = [];
-                const {register, use, route} = router((req, res, error) => {
-                    errors.push(error);
-                    res.statusCode = 404;
+                const {register, use, route} = router();
 
-                    res.end();
+                use(() => {
+                    throw new Error('middleware throw error');
                 });
 
                 use(() => {
                     throw new Error('middleware throw error');
                 });
 
+                use((req, res, next, error) => {
+                    errors.push(error);
+
+                    next();
+                });
+
                 register('./test/fixtures/errorhandling');
 
-                it('should trigger nested middleware error, falling into the internal fallback routine', (done) => {
+                it('should trigger nested middleware error, falling into the fallback routine', (done) => {
                     request(route)
                         .get('/error')
-                        .expect(404, () => {
+                        .expect(500, () => {
                             const [error] = errors;
 
-                            assert(errors.length === 1, 'only one error should be thrown');
+                            assert(errors.length === 1, 'only two errors should be thrown');
                             assert(error.message === "middleware throw error", 'thrown error differs from expectation');
 
                             done();
@@ -800,11 +842,7 @@ describe('micro-r', () => {
         });
 
         describe('typescript support - fixtures/typescript', () => {
-            const {route, register, configure} = router();
-
-            configure({
-                ext: '.ts',
-            });
+            const {route, register} = router({ext: '.ts'});
 
             register('./test/fixtures/typescript');
 

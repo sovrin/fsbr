@@ -19,15 +19,15 @@ describe('routes', () => {
     };
 
     describe('set/get', () => {
-        it('should set/get a handler', (done) => {
+        it('should set/get a listener', (done) => {
             const routes = factory();
             const path = '/foo' as Path;
 
             routes.set('GET', path, noop);
 
-            const handler = routes.get('GET', path);
+            const listener = routes.get('GET', path);
 
-            assert(noop === handler, 'returned value differs from original');
+            assert(noop === listener, 'returned value differs from original');
 
             done();
         });
@@ -44,6 +44,19 @@ describe('routes', () => {
 
             done();
         });
+
+        it('should set/get a listener via wildcard', (done) => {
+            const routes = factory();
+            const path = '/foo' as Path;
+
+            routes.set('*', path, noop);
+
+            const listener = routes.get('GET', path);
+
+            assert(noop === listener, 'returned value differs from original');
+
+            done();
+        })
     });
 
     describe('reduce', () => {
