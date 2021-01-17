@@ -76,7 +76,11 @@ const factory = () => {
         if (!token) {
             return routes[LISTENER];
         } else if (routes[WILDCARD]) {
-            return routes[WILDCARD][LISTENER];
+            if (routes[WILDCARD][LISTENER]) {
+                return routes[WILDCARD][LISTENER];
+            }
+
+            return down(tokens, routes[WILDCARD]);
         } else if (!routes[token]) {
             token = keys(routes)
                 .find((route) => route[0] === VARIABLE)

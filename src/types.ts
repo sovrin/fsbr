@@ -15,13 +15,10 @@ export type Router = {
     use(middleware: Middleware): void,
     has(method: Method, path: string): boolean,
     on(method: Method, path: string, listener: Listener): void,
-    chain(...middlewares: Middlewares): Listener,
+    chain(...middlewares: Array<Listener | Middleware>): Listener,
     route(req: Request, res: Response): Promise<any>,
     register(base: string, cb?: Function): void,
-    configure(target: Keys | Partial<Config>): any,
 }
-
-export type Keys = "entry" | "ext";
 
 export type Config = {
     entry?: string,
@@ -36,8 +33,6 @@ export type Cache = {
     del(tokens: Array<string>),
 }
 
-export type Listener = (req: Request, res: Response, variables?: object) => any;
-
 export type Method = typeof Methods[number];
 
 export const Methods = [
@@ -46,12 +41,18 @@ export const Methods = [
     'PUT',
     'PATCH',
     'DELETE',
+    'CONNECT',
+    'TRACE',
     'HEAD',
     'OPTIONS',
     '*',
 ] as const;
 
-export type Middleware = (req: Request, res: Response, next?: Function) => void;
+export type Listener = (req: Request, res: Response, params?: string | number) => any;
+
+export type Next = (error?: any) => Middleware;
+
+export type Middleware = (req: Request, res: Response, next: Next, error?: any) => void;
 
 export type Middlewares = Array<Middleware>;
 

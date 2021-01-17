@@ -1,68 +1,100 @@
 import {parse} from "url";
 import {readdirSync, statSync} from "fs";
 import {basename, extname, resolve} from "path";
+import {final as finalListener} from './listeners'
 import routesFactory from './routes';
-import {Method, Config, Keys, Listener, Middleware, Router, Middlewares, Methods, Path} from "./types";
+import {
+    Method,
+    Config,
+    Listener,
+    Middleware,
+    Router,
+    Middlewares,
+    Path,
+    Request,
+    Response,
+} from "./types";
 
 /**
  *
- * @param fallback
  */
-const factory = (fallback: Listener = null): Router => {
+const factory = (config: Config = {}): Router => {
     const routes = routesFactory();
+    const final = finalListener(config);
     const middlewares: Middlewares = [];
-    const config: Config = {
-        entry: 'index',
-        ext: '.js',
-        dev: false,
-    };
 
-    if (!fallback) {
-        // last resort
-        fallback = (req, res, error) => {
-            res.statusCode = 500;
-
-            if (config.dev) {
-                const names = Object.getOwnPropertyNames(error);
-                const string = JSON.stringify(error, names);
-
-                res.setHeader('Content-Type', 'application/json');
-
-                return res.end(string);
-            }
-
-            res.end();
-        };
-    }
+    const {
+        entry = 'index',
+        ext = '.js',
+    } = config;
 
     /**
      *
-     * @param listeners
+     * @param pool
      */
-    const chain = (...listeners: Array<Function>): Listener => {
-        return async (req, res, variables): Promise<void> => {
-            listeners = [].concat(...listeners)
-                .filter(Boolean)
-            ;
+    const chain = (...pool: Array<Listener | Middleware>): any => {
+        if (pool.length === 1) {
+            return pool[0];
+        }
+
+        pool = [].concat(...pool)
+            .filter(Boolean)
+        ;
+
+        let listeners = pool.filter(
+            (listener) => listener.length !== 4,
+        );
+
+        let errorListeners = pool.filter(
+            (listener) => listener.length === 4,
+        );
+
+        /**
+         *
+         * @param req
+         * @param res
+         * @param parameters
+         */
+        return async (req: Request, res: Response, params?: string | number): Promise<void> => {
 
             /**
              *
+             * @param error
              */
-            const next = async () => {
+            const next = async (error: any = null) => {
+                if (error && errorListeners.length) {
+                    listeners = [
+                        ...errorListeners,
+                        ...listeners,
+                    ];
+
+                    errorListeners = [];
+                }
+
                 const listener = listeners.shift();
-                const param = (listeners.length === 0)
-                    ? variables
+
+                if (!listener) {
+                    return final(req, res, null, error);
+                }
+
+                const current = (listeners.length == 0 && !error)
+                    ? params
                     : next
                 ;
 
+                const args = (listener.length === 4)
+                    ? [req, res, current, error]
+                    : [req, res, current]
+                ;
+
                 try {
-                    return await listener(req, res, param);
+                    return await listener.apply(null, args);
                 } catch (error) {
-                    return await fallback(req, res, error);
+                    await next(error);
                 }
             };
 
-            return await next();
+            return await next(null);
         };
     };
 
@@ -73,32 +105,15 @@ const factory = (fallback: Listener = null): Router => {
      * @param listener
      */
     const on = (method: Method, path: string, listener: Listener): void => {
-        if (method === '*') {
-            for (const method of Methods) {
-                if (method === '*') {
-                    continue;
-                }
-
-                on(method, path, listener);
-            }
-
-            return;
-        }
-
-        if (middlewares.length) {
-            listener = chain(...middlewares, listener);
-        }
+        listener = chain(...middlewares, listener);
 
         routes.set(method, path as Path, listener);
     };
 
-    /**
-     *
-     * @param middleware
-     */
-    const use = (middleware: Middleware): void => {
+
+    function use(middleware: Middleware) {
         middlewares.push(middleware);
-    };
+    }
 
     /**
      *
@@ -118,18 +133,18 @@ const factory = (fallback: Listener = null): Router => {
     const route: Listener = async (req, res): Promise<any> => {
         const {url, method} = req;
         const {pathname} = parse(url, true) as any;
-        const listener = routes.get(method, pathname);
+        const listener = routes.get(method, pathname) as Listener;
 
         if (!listener) {
-            return chain(...middlewares, fallback)(req, res);
+            return chain(...middlewares, final)(req, res);
         }
 
-        const resolved = routes.resolve(method, pathname);
-        const waterfall = [].concat(middlewares)
-            .concat(routes.reduce(pathname))
-        ;
+        {
+            const parameters = routes.resolve(method, pathname);
+            const middlewares = routes.reduce(pathname);
 
-        return chain(...waterfall, listener)(req, res, resolved);
+            chain(...middlewares, listener, final)(req, res, parameters);
+        }
     };
 
     /**
@@ -138,8 +153,6 @@ const factory = (fallback: Listener = null): Router => {
      * @param cb
      */
     const register = (base: string, cb?: Function): void => {
-        const {ext, entry} = config;
-
         base = resolve(base);
 
         /**
@@ -197,7 +210,7 @@ const factory = (fallback: Listener = null): Router => {
                     .replace(/\[(.*?)\]/g, ':$1') as Path
                 ;
 
-                routes.set(method, pathname, listener);
+                on(method, pathname, listener);
             };
 
             for (const file of readdirSync(path)) {
@@ -209,22 +222,6 @@ const factory = (fallback: Listener = null): Router => {
         cb && cb();
     };
 
-    /**
-     *
-     * @param target
-     */
-    const configure = (target: Keys | Partial<Config>): Config | any => {
-        if (typeof target === "string") {
-            return config[target];
-        }
-
-        for (const key of Object.keys(target)) {
-            config[key] = target[key];
-        }
-
-        return config;
-    };
-
     return {
         use,
         has,
@@ -232,7 +229,6 @@ const factory = (fallback: Listener = null): Router => {
         chain,
         route,
         register,
-        configure,
     };
 };
 
