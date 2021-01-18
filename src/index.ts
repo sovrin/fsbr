@@ -41,14 +41,6 @@ const factory = (config: Config = {}): Router => {
             .filter(Boolean)
         ;
 
-        let listeners = pool.filter(
-            (listener) => listener.length !== 4,
-        );
-
-        let errorListeners = pool.filter(
-            (listener) => listener.length === 4,
-        );
-
         /**
          *
          * @param req
@@ -56,6 +48,13 @@ const factory = (config: Config = {}): Router => {
          * @param parameters
          */
         return async (req: Request, res: Response, params?: string | number): Promise<void> => {
+            let listeners = pool.filter(
+                (listener) => listener.length !== 4,
+            );
+
+            let errorListeners = pool.filter(
+                (listener) => listener.length === 4,
+            );
 
             /**
              *
@@ -139,12 +138,10 @@ const factory = (config: Config = {}): Router => {
             return chain(...middlewares, final)(req, res);
         }
 
-        {
-            const parameters = routes.resolve(method, pathname);
-            const middlewares = routes.reduce(pathname);
+        const parameters = routes.resolve(method, pathname);
+        const reduced = routes.reduce(pathname);
 
-            chain(...middlewares, listener, final)(req, res, parameters);
-        }
+        chain(...reduced, listener, final)(req, res, parameters);
     };
 
     /**

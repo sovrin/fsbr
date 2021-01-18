@@ -236,11 +236,6 @@ describe('fsbr', () => {
             const {on, use, route} = router();
             let callCount = 0;
 
-            on('GET', '/custom', (req, res) => {
-                // @ts-ignore
-                send(res, 200, {data: res.data, calls: callCount});
-            });
-
             use((req, res, next) => {
                 // @ts-ignore
                 res.data = 123;
@@ -272,6 +267,13 @@ describe('fsbr', () => {
                 request(route)
                     .get('/foo')
                     .expect(500, done)
+                ;
+            });
+
+            it('should respond with 200 to GET:/custom with data of middleware (consecutive call)', (done) => {
+                request(route)
+                    .get('/custom')
+                    .expect(200, done)
                 ;
             });
 
