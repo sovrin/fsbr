@@ -8,7 +8,7 @@
 [![devDependencies][devDep-src]][devDep-href]
 [![License][license-src]][license-href]
 
-> file structure based router for HTTP servers
+> file structure based router for servers
 
 ## Installation
 ```bash
@@ -85,8 +85,8 @@ const {on, use, chain, register, route} = router();
 
 <a name="routerOn"></a>
 #### `router.on(method, path, listener)`
-Registers a route to the router. A Method can be any known [`HTTP method/verb`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) or a wildcard `*`.
-Paths can contain a variable, denoted with a semicolon. In this case, listeners receive a third optional argument with the resolved variables. Paths can also have a wildcard. `fsbr` will match every request after that. 
+Registers a route. A Method can be any known [`HTTP method/verb`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) or a wildcard `*`.
+Paths can contain a variable denoted via a semicolon. In this case, listeners receive a third optional argument with the resolved variable. Paths can also have a wildcard. `fsbr` will match every request after that. 
 
 ```javascript
 const {on} = router();
@@ -191,11 +191,11 @@ server.listen(8080);
 
 <a name="routerRegister"></a>
 #### `router.register(base, cb)`
-Recursively registers all routes within the `base` folder and call the optional callback when finished.
+Recursively register all routes within the `base` folder and call the optional callback when finished.
 Each directory represents a part of the URL pathname.
 Dynamic routes can be created by enclosing the directory name in square brackets e.g. `[id]`.
 Listeners are named by [`HTTP methods/verbs`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) and export a default listening function.
-Middlewares can be placed alongside the listeners an `index` file. This index file can export a single middleware function or an array of functions.
+Middlewares can be placed alongside the listeners as `index` files. These files can export a single middleware function or an array of functions.
 
 ```javascript
 const {register} = router();
