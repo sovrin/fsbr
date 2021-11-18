@@ -141,7 +141,7 @@ const factory = (config: Config = {}): Router => {
         const parameters = routes.resolve(method, pathname);
         const reduced = routes.reduce(pathname);
 
-        chain(...reduced, listener, final)(req, res, parameters);
+        return chain(...reduced, listener, final)(req, res, parameters);
     };
 
     /**
