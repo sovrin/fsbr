@@ -1,5 +1,5 @@
 import cacheFactory from './cache';
-import {Listener, Method, Middleware, Path, Routes, Tokens} from "./types";
+import {Listener, Method, Middleware, Path, Routes, Tokens} from './types';
 
 const VARIABLE = ':';
 const PATH = '/';
@@ -27,7 +27,6 @@ const factory = () => {
      */
     const tokenize = (type: Type, method: Method, path: Path): Tokens => (
         [type, method, path].filter(Boolean)
-            // .map(entry => entry.toUpperCase())
             .join(PATH)
             .split(PATH)
             .filter(Boolean)
@@ -178,7 +177,7 @@ const factory = () => {
         }
 
         return context;
-    }
+    };
 
     /**
      *

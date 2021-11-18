@@ -1,5 +1,5 @@
-import {IncomingMessage, ServerResponse} from "http";
-import {LISTENER} from "./routes";
+import {IncomingMessage, ServerResponse} from 'http';
+import {LISTENER} from './routes';
 
 export type Request = IncomingMessage & {
     method: Method,

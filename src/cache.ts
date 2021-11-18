@@ -1,4 +1,4 @@
-import {Cache} from "./types";
+import {Cache} from './types';
 
 /**
  *
@@ -63,14 +63,9 @@ const factory = () => {
         const key = serialize(tokens);
 
         return cache.delete(key);
-    }
-
-    return {
-        has,
-        get,
-        set,
-        del,
     };
+
+    return context();
 };
 
 /**

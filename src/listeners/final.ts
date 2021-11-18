@@ -1,4 +1,4 @@
-import {Request, Response, Next} from "../types";
+import {Request, Response, Next} from '../types';
 
 /**
  *

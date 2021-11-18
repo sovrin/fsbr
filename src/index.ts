@@ -1,7 +1,7 @@
-import {parse} from "url";
-import {readdirSync, statSync} from "fs";
-import {basename, extname, resolve} from "path";
-import {final as finalListener} from './listeners'
+import {parse} from 'url';
+import {readdirSync, statSync} from 'fs';
+import {basename, extname, resolve} from 'path';
+import {final as finalListener} from './listeners';
 import routesFactory from './routes';
 import {
     Method,
@@ -13,7 +13,7 @@ import {
     Path,
     Request,
     Response,
-} from "./types";
+} from './types';
 
 /**
  *
