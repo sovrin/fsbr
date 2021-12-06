@@ -1,4 +1,4 @@
-import {Cache} from './types';
+import {Cache, Middleware, Token} from './types';
 
 /**
  *
@@ -9,7 +9,7 @@ const factory = () => {
     /**
      *
      */
-    const serialize = (tokens: Array<string>): string => (
+    const serialize = (tokens: Token[]): string => (
         tokens.join('|')
     );
 
@@ -27,7 +27,7 @@ const factory = () => {
      *
      * @param tokens
      */
-    const has = (tokens: Array<string>): boolean => {
+    const has = (tokens: Token[]): boolean => {
         const key = serialize(tokens);
 
         return cache.has(key);
@@ -37,7 +37,7 @@ const factory = () => {
      *
      * @param tokens
      */
-    const get = (tokens: Array<string>): any => {
+    const get = (tokens: Token[]): Middleware[] => {
         const key = serialize(tokens);
 
         return cache.get(key);
@@ -48,7 +48,7 @@ const factory = () => {
      * @param tokens
      * @param value
      */
-    const set = (tokens: Array<string>, value: any): Cache => {
+    const set = (tokens: Token[], value: Middleware[]): Cache => {
         const key = serialize(tokens);
         cache.set(key, value);
 
@@ -59,7 +59,7 @@ const factory = () => {
      *
      * @param tokens
      */
-    const del = (tokens: Array<string>): boolean => {
+    const del = (tokens: Token[]): boolean => {
         const key = serialize(tokens);
 
         return cache.delete(key);

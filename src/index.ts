@@ -3,16 +3,17 @@ import {readdirSync, statSync} from 'fs';
 import {basename, extname, resolve} from 'path';
 import {final as finalListener} from './listeners';
 import routesFactory from './routes';
-import {
+import type {
     Method,
     Config,
     Listener,
     Middleware,
     Router,
-    Middlewares,
     Path,
     Request,
     Response,
+    ErrorArgs,
+    ListenerArgs, Parameters,
 } from './types';
 
 /**
@@ -21,7 +22,7 @@ import {
 const factory = (config: Config = {}): Router => {
     const routes = routesFactory();
     const final = finalListener(config);
-    const middlewares: Middlewares = [];
+    const middlewares: Middleware[] = [];
 
     const {
         entry = 'index',
@@ -32,7 +33,7 @@ const factory = (config: Config = {}): Router => {
      *
      * @param pool
      */
-    const chain = (...pool: Array<Listener | Middleware>): any => {
+    const chain = (...pool: (Listener | Middleware)[]): any => {
         if (pool.length === 1) {
             return pool[0];
         }
@@ -47,7 +48,7 @@ const factory = (config: Config = {}): Router => {
          * @param res
          * @param parameters
          */
-        return async (req: Request, res: Response, params?: string | number): Promise<void> => {
+        return async (req: Request, res: Response, parameters?: Parameters): Promise<void> => {
             let listeners = pool.filter(
                 (listener) => listener.length !== 4,
             );
@@ -76,18 +77,18 @@ const factory = (config: Config = {}): Router => {
                     return final(req, res, null, error);
                 }
 
-                const current = (listeners.length == 0 && !error)
-                    ? params
+                const arg = (listeners.length == 0 && !error)
+                    ? parameters
                     : next
                 ;
 
                 const args = (listener.length === 4)
-                    ? [req, res, current, error]
-                    : [req, res, current]
+                    ? [req, res, arg, error] as ErrorArgs
+                    : [req, res, arg] as ListenerArgs
                 ;
 
                 try {
-                    return await listener.apply(null, args);
+                    return await apply(listener, args);
                 } catch (error) {
                     await next(error);
                 }
@@ -109,8 +110,11 @@ const factory = (config: Config = {}): Router => {
         routes.set(method, path as Path, listener);
     };
 
-
-    function use(middleware: Middleware) {
+    /**
+     *
+     * @param middleware
+     */
+    function use(middleware: Middleware): void {
         middlewares.push(middleware);
     }
 
@@ -129,7 +133,7 @@ const factory = (config: Config = {}): Router => {
      * @param req
      * @param res
      */
-    const route: Listener = async (req, res): Promise<any> => {
+    const route: Listener = async <T>(req, res): Promise<T> => {
         const {url, method} = req;
         const {pathname} = parse(url, true) as any;
         const listener = routes.get(method, pathname) as Listener;
@@ -235,3 +239,4 @@ const factory = (config: Config = {}): Router => {
  * Time: 10:46
  */
 export default factory;
+export type {Middleware, Config, Method, Listener, Response, Request};

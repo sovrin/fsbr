@@ -1,5 +1,5 @@
 import cacheFactory from './cache';
-import {Listener, Method, Middleware, Path, Routes, Tokens} from './types';
+import {Listener, Method, Middleware, Parameters, Path, Routes, Token} from './types';
 
 const VARIABLE = ':';
 const PATH = '/';
@@ -25,7 +25,7 @@ const factory = () => {
      * @param method
      * @param path
      */
-    const tokenize = (type: Type, method: Method, path: Path): Tokens => (
+    const tokenize = (type: Type, method: Method, path: Path): Token[] => (
         [type, method, path].filter(Boolean)
             .join(PATH)
             .split(PATH)
@@ -46,7 +46,7 @@ const factory = () => {
      * @param listener
      * @param routes
      */
-    const up = (tokens: Tokens, listener: Listener | Middleware, routes: Routes) => {
+    const up = (tokens: Token[], listener: Listener | Middleware, routes: Routes) => {
         const token = tokens.shift();
 
         if (!token) {
@@ -69,7 +69,7 @@ const factory = () => {
      * @param tokens
      * @param routes
      */
-    const down = (tokens: Tokens, routes: Routes): Listener | Middleware => {
+    const down = (tokens: Token[], routes: Routes): Listener | Middleware => {
         let token = tokens.shift();
 
         if (!token) {
@@ -112,7 +112,7 @@ const factory = () => {
      *
      * @param path
      */
-    const reduce = (path: Path): Array<any> => {
+    const reduce = (path: Path): Middleware[] => {
         const tokens = tokenize(Type.MIDDLEWARE, null, path);
 
         if (cache.has(tokens)) {
@@ -126,7 +126,7 @@ const factory = () => {
          * @param i
          * @param tokens
          */
-        const reducer = (acc, token, i, tokens) => {
+        const reducer = (acc: Partial<Middleware>[], token: Token, i: number, tokens: Token[]) => {
             const partial = tokens.slice(0, i + 1);
             const fn = down(partial, routes);
 
@@ -151,10 +151,10 @@ const factory = () => {
      * @param method
      * @param path
      */
-    const resolve = (method: Method, path: Path) => {
+    const resolve = (method: Method, path: Path): Parameters => {
         const tokens = tokenize(Type.LISTENER, method, path);
 
-        const context = {};
+        const context = {} as Parameters;
         let level = 0;
         let cursor = routes;
 
