@@ -15,16 +15,6 @@ const factory = () => {
 
     /**
      *
-     */
-    const context = (): Cache => ({
-        has,
-        get,
-        set,
-        del,
-    });
-
-    /**
-     *
      * @param tokens
      */
     const has = (tokens: Token[]): boolean => {
@@ -64,6 +54,16 @@ const factory = () => {
 
         return cache.delete(key);
     };
+
+    /**
+     *
+     */
+    const context = (): Cache => ({
+        has,
+        get,
+        set,
+        del,
+    });
 
     return context();
 };
