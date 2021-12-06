@@ -3,7 +3,7 @@ import {Cache, Middleware, Token} from './types';
 /**
  *
  */
-const factory = () => {
+const factory = (length: number = 1000) => {
     const cache: Map<string, any> = new Map();
 
     /**
@@ -40,6 +40,11 @@ const factory = () => {
      */
     const set = (tokens: Token[], value: Middleware[]): Cache => {
         const key = serialize(tokens);
+
+        if (cache.size >= length) {
+            cache.delete(cache.keys().next().value);
+        }
+
         cache.set(key, value);
 
         return context();
