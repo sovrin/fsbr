@@ -1,4 +1,4 @@
-name: tests and coverage
+name: test and coverage
 
 on: [ push, pull_request ]
 env:
