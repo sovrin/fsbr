@@ -68,11 +68,11 @@ app.listen(3000);
 <a name="ctor"></a>
 ### `fsbr(config: Config)`
 #### `Config`
-|         | default | description
-| :------ | :------ | :----------
-| `ext`   | .js     | extension of middleware and listener files
-| `entry` | index   | name of middleware files e.g. `middleware`
-| `dev`   | false   | print errors in `final` listener
+|         | default | description                                |
+|:--------|:--------|:-------------------------------------------|
+| `ext`   | .js     | extension of middleware and listener files |
+| `entry` | index   | name of middleware files e.g. `middleware` |
+| `dev`   | false   | print errors in `final` listener           |
 
 Creates a new `fsbr` instance.
 ```javascript
