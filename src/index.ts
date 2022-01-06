@@ -27,7 +27,7 @@ const factory = (config: Config = {}): Router => {
     const {
         entry = 'index',
         ext = '.js',
-    } = config;
+    }: Config = config;
 
     /**
      *
@@ -88,7 +88,7 @@ const factory = (config: Config = {}): Router => {
                 ;
 
                 try {
-                    return await apply(listener, args);
+                    return await listener.apply(null, args);
                 } catch (error) {
                     await next(error);
                 }

@@ -20,13 +20,10 @@ export type Router = {
     register(base: string, cb?: Function): void,
 }
 
-export type Apply = (listener: Listener | Middleware, args: ListenerArgs | ErrorArgs) => any
-
 export type Config = {
     entry?: string,
     ext?: string,
     dev?: boolean,
-    apply?: Apply,
 };
 
 export type Cache = {
