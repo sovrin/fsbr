@@ -1,8 +1,7 @@
 import {parse} from 'url';
 import {readdirSync, statSync} from 'fs';
 import {basename, extname, resolve} from 'path';
-import {final as finalListener} from './listeners';
-import routesFactory from './routes';
+import creator from './creator';
 import type {
     Method,
     Config,
@@ -20,8 +19,8 @@ import type {
  *
  */
 const factory = (config: Config = {}): Router => {
-    const routes = routesFactory();
-    const final = finalListener(config);
+    const routes = creator('routes')();
+    const final = creator('final')(config);
     const middlewares: Middleware[] = [];
 
     const {

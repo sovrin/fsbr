@@ -1,4 +1,4 @@
-import cacheFactory from './cache';
+import creator from './creator';
 import {Listener, Method, Middleware, Parameters, Path, Routes, Token} from './types';
 
 const VARIABLE = ':';
@@ -17,7 +17,7 @@ enum Type {
  */
 const factory = () => {
     const routes: Routes = {};
-    const cache = cacheFactory();
+    const cache = creator('cache')();
 
     /**
      *
