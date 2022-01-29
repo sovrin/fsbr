@@ -3,8 +3,8 @@ import {Cache, Middleware, Token} from './types';
 /**
  *
  */
-const factory = (length: number = 1000) => {
-    const cache: Map<string, any> = new Map();
+const factory = (length = 1000) => {
+    const cache: Map<string, Middleware[]> = new Map();
 
     /**
      *

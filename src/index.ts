@@ -48,19 +48,19 @@ const factory = (config: Config = {}): Router => {
          * @param parameters
          */
         return async (req: Request, res: Response, parameters?: Parameters): Promise<void> => {
-            let listeners = pool.filter(
-                (listener) => listener.length !== 4,
-            );
+            let listeners = pool.filter((listener) => (
+                listener.length !== 4
+            ));
 
-            let errorListeners = pool.filter(
-                (listener) => listener.length === 4,
-            );
+            let errorListeners = pool.filter((listener) => (
+                listener.length === 4
+            ));
 
             /**
              *
              * @param error
              */
-            const next = async (error: any = null) => {
+            const next = async (error: unknown = null) => {
                 if (error && errorListeners.length) {
                     listeners = [
                         ...errorListeners,
@@ -113,7 +113,7 @@ const factory = (config: Config = {}): Router => {
      *
      * @param middleware
      */
-    function use(middleware: Middleware): void {
+    function use (middleware: Middleware): void {
         middlewares.push(middleware);
     }
 
@@ -152,7 +152,7 @@ const factory = (config: Config = {}): Router => {
      * @param base
      * @param cb
      */
-    const register = (base: string, cb?: Function): void => {
+    const register = (base: string, cb?: () => void): void => {
         base = resolve(base);
 
         /**

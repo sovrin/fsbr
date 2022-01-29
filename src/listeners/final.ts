@@ -5,12 +5,10 @@ import {Request, Response, Next} from '../types';
  * @param dev
  */
 const factory = ({dev = false}) => {
-
     /**
      *
      */
     return (req: Request, res: Response, next: Next, error: any) => {
-
         if (res.headersSent) {
             return;
         }

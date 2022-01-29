@@ -9,7 +9,7 @@ export type Request = IncomingMessage & {
 
 export type Response = ServerResponse;
 
-export type Path = Opaque<"Path", string>;
+export type Path = Opaque<'Path', string>;
 
 export type Router = {
     use(middleware: Middleware): void,
@@ -17,7 +17,7 @@ export type Router = {
     on(method: Method, path: string, listener: Listener): void,
     chain(...middlewares: (Listener | Middleware)[]): Listener,
     route(req: Request, res: Response): Promise<any>,
-    register(base: string, cb?: Function): void,
+    register(base: string, cb?: () => void): void,
 }
 
 export type Config = {
