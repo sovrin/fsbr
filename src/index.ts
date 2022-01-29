@@ -68,6 +68,8 @@ const factory = (config: Config = {}): Router => {
                     ];
 
                     errorListeners = [];
+                } else if (error && !listeners.length) {
+                    listeners = [];
                 }
 
                 const listener = listeners.shift();

@@ -24,6 +24,8 @@ const factory = ({dev = false}) => {
         }
 
         res.end();
+
+        return next && next();
     };
 };
 
