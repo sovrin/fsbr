@@ -296,8 +296,30 @@ describe('fsbr', () => {
         });
 
         describe('use error middleware', () => {
-            describe('by throw Error', () => {
-                const {on, use, route} = router({dev: true});
+            describe('by throw Error and no error middleware', () => {
+                const {use, route} = router({dev: true});
+
+                use(() => {
+                    throw new Error('throw new whoops');
+                });
+
+                use((req, res, next) => {
+                    // @ts-ignore
+                    next(res.error.message);
+                });
+
+                it('should respond with 200 to GET:/custom with data of final middleware', (done) => {
+                    request(route)
+                        .get('/custom')
+                        .expect('Content-Type', /json/)
+                        .expect(/throw new whoops/)
+                        .expect(500, done)
+                    ;
+                });
+            });
+
+            describe('by throw Error and error middleware', () => {
+                const {use, route} = router({dev: true});
 
                 use(() => {
                     throw new Error('throw new whoops');
@@ -310,16 +332,11 @@ describe('fsbr', () => {
                     next(error);
                 });
 
-                on('GET', '/custom', (req, res, next) => {
-                    // @ts-ignore
-                    next(res.error);
-                });
-
-                it('should respond with 200 to GET:/custom with data of middleware', (done) => {
+                it('should respond with 200 to GET:/custom with data of final middleware', (done) => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
-                        .expect('"throw new whoops"')
+                        .expect(/throw new whoops/)
                         .expect(500, done)
                     ;
                 });
@@ -795,13 +812,13 @@ describe('fsbr', () => {
                 it('should trigger nested middleware error, falling into the fallback routine', (done) => {
                     request(route)
                         .get('/error')
-                        .expect(500, () => {
+                        .expect(500, (response) => {
                             const [error] = errors;
 
                             assert(errors.length === 2, 'only one error should be thrown');
                             assert(error.message === "handler throw error", 'thrown error differs from expectation');
 
-                            done();
+                            done(response);
                         })
                     ;
                 });
@@ -830,13 +847,12 @@ describe('fsbr', () => {
                 it('should trigger nested middleware error, falling into the fallback routine', (done) => {
                     request(route)
                         .get('/error')
-                        .expect(500, () => {
+                        .expect(500, (response) => {
                             const [error] = errors;
 
                             assert(errors.length === 1, 'only two errors should be thrown');
-                            assert(error.message === "middleware throw error", 'thrown error differs from expectation');
-
-                            done();
+                            assert(error.message === 'middleware throw error', 'thrown error differs from expectation');
+                            done(response);
                         })
                     ;
                 });
