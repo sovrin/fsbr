@@ -33,13 +33,13 @@ const factory = (config: Config = {}): Router => {
      * @param pool
      */
     const chain = (...pool: (Listener | Middleware)[]): any => {
+        pool = Array.from(pool)
+            .filter(Boolean)
+        ;
+
         if (pool.length === 1) {
             return pool[0];
         }
-
-        pool = [].concat(...pool)
-            .filter(Boolean)
-        ;
 
         /**
          *
@@ -52,24 +52,17 @@ const factory = (config: Config = {}): Router => {
                 listener.length !== 4
             ));
 
-            let errorListeners = pool.filter((listener) => (
-                listener.length === 4
-            ));
-
             /**
              *
              * @param error
              */
             const next = async (error: unknown = null) => {
-                if (error && errorListeners.length) {
-                    listeners = [
-                        ...errorListeners,
-                        ...listeners,
-                    ];
+                if (error && pool) {
+                    listeners = pool.filter((listener) => (
+                        listener.length === 4
+                    ));
 
-                    errorListeners = [];
-                } else if (error && !listeners.length) {
-                    listeners = [];
+                    pool = null;
                 }
 
                 const listener = listeners.shift();
