@@ -20,6 +20,10 @@ jobs:
           node-version: 12.x
       - run: npm i
       - run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: ./dist
 
   publish:
     needs: build
@@ -32,6 +36,9 @@ jobs:
         with:
           node-version: 12.x
           registry-url: https://registry.npmjs.org/
+      - uses: actions/download-artifact@v2
+        with:
+          name: build
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
