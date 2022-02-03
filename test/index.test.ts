@@ -308,7 +308,7 @@ describe('fsbr', () => {
                     next(res.error.message);
                 });
 
-                it('should respond with 200 to GET:/custom with data of final middleware', (done) => {
+                it('should respond with 500 to GET:/custom with final middleware', (done) => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
@@ -332,7 +332,7 @@ describe('fsbr', () => {
                     next(error);
                 });
 
-                it('should respond with 200 to GET:/custom with data of final middleware', (done) => {
+                it('should respond with 500 to GET:/custom with final middleware', (done) => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
@@ -343,30 +343,39 @@ describe('fsbr', () => {
             });
 
             describe('by passing error', () => {
-                const {on, use, route} = router();
+                const {on, use, route} = router({dev: true});
+                let hits = 0;
 
                 use((req, res, next) => {
+                    hits += 1;
                     next('whoops');
                 });
 
                 use((req, res, next, error) => {
-                    // @ts-ignore
-                    res.error = error;
+                    hits += 1;
+                    next(error);
+                });
 
+                use((req, res, next) => {
+                    hits += 1;
                     next();
                 });
 
                 on('GET', '/custom', (req, res) => {
-                    // @ts-ignore
-                    send(res, 200, {error: res.error});
+                    hits += 1;
+                    send(res, 200);
                 });
 
-                it('should respond with 200 to GET:/custom with data of middleware', (done) => {
+                it('should respond with 500 to GET:/custom from final middleware and never reach listener', (done) => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
-                        .expect({'error': 'whoops'})
-                        .expect(200, done)
+                        .expect('"whoops"')
+                        .expect(500, (response) => {
+                            assert(hits === 2);
+
+                            done(response);
+                        })
                     ;
                 });
             });
