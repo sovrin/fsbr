@@ -209,6 +209,13 @@ describe('fsbr', () => {
             describe('later bound middlewares are ignored', () => {
                 const {on, use, route} = router();
 
+                use((req, res, next) => {
+                    // @ts-ignore
+                    res.data = "foo";
+
+                    next();
+                });
+
                 on('GET', '/custom', (req, res) => {
                     // @ts-ignore
                     send(res, 200, {data: res.data || false});
@@ -216,7 +223,7 @@ describe('fsbr', () => {
 
                 use((req, res, next) => {
                     // @ts-ignore
-                    res.data = 123;
+                    res.data = "bar";
 
                     next();
                 });
@@ -225,7 +232,7 @@ describe('fsbr', () => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
-                        .expect({'data': false})
+                        .expect({'data': "foo"})
                         .expect(200, done)
                     ;
                 });
