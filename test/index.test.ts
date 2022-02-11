@@ -699,12 +699,12 @@ describe('fsbr', () => {
             describe('with wildcard route', () => {
                 const {register, on, route} = router();
 
+                register('./test/fixtures/onlymiddlewares');
+
                 on('GET', '/proxy/*', (req, res) => {
                     // @ts-ignore
                     send(res, 200, {data: res.data});
                 });
-
-                register('./test/fixtures/onlymiddlewares');
 
                 it('should respond with 200 to GET:/', (done) => {
                     request(route)
