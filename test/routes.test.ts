@@ -1,46 +1,28 @@
 import assert from "assert";
 import factory from "../src/routes";
-import {Path} from "../src/types";
+import {Path, Position} from '../src/types';
 
 describe('routes', () => {
 
     /**
      *
      */
-    const noop = () => {
-    };
-
-    /**
-     *
-     */
     const createNoop = () => {
-        return () => {
-        };
+        return () => {};
     };
 
     describe('set/get', () => {
         it('should set/get a listener', (done) => {
             const routes = factory();
             const path = '/foo' as Path;
+            const noop = createNoop();
 
             routes.set('GET', path, noop);
 
-            const listener = routes.get('GET', path);
+            const [listener, position] = routes.get('GET', path);
 
-            assert(noop === listener, 'returned value differs from original');
-
-            done();
-        });
-
-        it('should set/get a middleware', (done) => {
-            const routes = factory();
-            const path = '/foo' as Path;
-
-            routes.set(null, path, noop);
-
-            const middleware = routes.get(null, path);
-
-            assert(noop === middleware, 'returned value differs from original');
+            assert(listener === noop, 'returned value differs from original');
+            assert(position === 1, 'returned value differs from original');
 
             done();
         });
@@ -48,12 +30,14 @@ describe('routes', () => {
         it('should set/get a listener via wildcard', (done) => {
             const routes = factory();
             const path = '/foo' as Path;
+            const noop = createNoop();
 
             routes.set('*', path, noop);
 
-            const listener = routes.get('GET', path);
+            const [listener, position] = routes.get('GET', path);
 
-            assert(noop === listener, 'returned value differs from original');
+            assert(listener === noop, 'returned value differs from original');
+            assert(position === 1, 'returned value differs from original');
 
             done();
         })
@@ -87,6 +71,25 @@ describe('routes', () => {
             done();
         });
 
+        it('should return middlewares from position 2', (done) => {
+            const routes = factory();
+
+            for (let i = 0; i < 5; i++) {
+                routes.set(null, '/foo' as Path, createNoop());
+            }
+
+            const all = routes.reduce('/foo' as Path);
+            const middlewares = routes.reduce('/foo' as Path, 3 as Position);
+            const unique = [...new Set(middlewares)];
+
+            assert(all.length === 5, 'middleware length differs from expectation');
+            assert(middlewares.length === 2, 'middleware length differs from expectation');
+            assert(unique.length === 2, 'middlewares are not unique');
+
+            done();
+        });
+
+
         it('should use cache', (done) => {
             const routes = factory();
             const path = '/foo' as Path;
@@ -96,18 +99,26 @@ describe('routes', () => {
 
             // set and save to cache
             routes.set(null, path, a);
-            let [middleware] = routes.reduce(path);
-            assert(middleware === a, 'reduced middleware differs from expectation');
-            assert(middleware !== b, 'reduced middleware differs from expectation');
 
-            // retrieve from cache
-            [middleware] = routes.reduce(path);
-            assert(middleware === a, 'reduced middleware differs from expectation');
+            {
+                const [middleware] = routes.reduce(path);
+                assert(middleware === a, 'reduced middleware differs from expectation');
+                assert(middleware !== b, 'reduced middleware differs from expectation');
+            }
 
-            // reset from
-            routes.set(null, path, b);
-            [middleware] = routes.reduce(path);
-            assert(middleware === b, 'reduced middleware differs from expectation');
+            {
+                // retrieve from cache
+                const [middleware] = routes.reduce(path);
+                assert(middleware === a, 'reduced middleware differs from expectation');
+            }
+
+            {
+                // retrieve multiple
+                routes.set(null, path, b);
+                const [middlewareA, middleWareB] = routes.reduce(path);
+                assert(middlewareA === a, 'reduced middleware differs from expectation');
+                assert(middleWareB === b, 'reduced middleware differs from expectation');
+            }
 
             done();
         });
@@ -117,6 +128,8 @@ describe('routes', () => {
         it('should return id from url', (done) => {
             const routes = factory();
             const path = '/user/:id' as Path;
+            const noop = createNoop();
+
             routes.set('GET', path, noop);
 
             const resolved = routes.resolve('GET', '/user/123' as Path);
@@ -129,6 +142,8 @@ describe('routes', () => {
         it('should return id/name from GET:/user/123/joe', (done) => {
             const routes = factory();
             const path = '/user/:a/:b' as Path;
+            const noop = createNoop();
+
             routes.set('GET', path, noop);
 
             const resolved = routes.resolve('GET', '/user/123/joe' as Path);
@@ -142,6 +157,8 @@ describe('routes', () => {
         it('should only return id from GET:/user/123', (done) => {
             const routes = factory();
             const path = '/user/:a/:b' as Path;
+            const noop = createNoop();
+
             routes.set('GET', path, noop);
 
             const resolved = routes.resolve('GET', '/user/123' as Path);
@@ -155,6 +172,8 @@ describe('routes', () => {
         it('should not return anything', (done) => {
             const routes = factory();
             const path = '/user/:id' as Path;
+            const noop = createNoop();
+
             routes.set('GET', path, noop);
 
             const resolved = routes.resolve('GET', '/unknown/123' as Path);
