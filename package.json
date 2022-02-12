@@ -7,8 +7,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc --project tsconfig.prod.json",
-    "watch": "tsc --watch",
-    "test": "mocha -r ts-node/register/transpile-only --full-trace 'test/**/*.ts'",
+    "test": "mocha -r ts-node/register/transpile-only --full-trace 'test/**/*.test.ts'",
+    "watch": "mocha -r ts-node/register/transpile-only --reporter dot --watch --watch-files 'src/**/*.ts' 'test/**/*.test.ts'",
     "coverage": "nyc npm test"
   },
   "author": {
