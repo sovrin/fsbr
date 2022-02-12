@@ -20,10 +20,12 @@ const factory = ({dev = false}) => {
             const string = JSON.stringify(error, names);
 
             res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Length', Buffer.from(string).length);
             res.end(string);
+        } else {
+            res.setHeader('Content-Length', 0);
+            res.end();
         }
-
-        res.end();
 
         return next && next();
     };
