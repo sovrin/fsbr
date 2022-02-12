@@ -1,4 +1,3 @@
-import {parse} from 'url';
 import {readdirSync, statSync} from 'fs';
 import {basename, extname, resolve} from 'path';
 import creator from './creator';
@@ -126,9 +125,8 @@ const factory = (config: Config = {}): Router => {
      * @param res
      */
     const route: Listener = async <T>(req, res): Promise<T> => {
-        const {url, method} = req;
-        const {pathname} = parse(url, true) as any;
-
+        const {url, method, headers: {host}} = req;
+        const {pathname} = new URL(url, `https://${host}`) as any;
         const [listener, position] = routes.get(method, pathname);
         const middlewares = routes.reduce(pathname, position);
         const parameters = routes.resolve(method, pathname);
