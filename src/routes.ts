@@ -1,15 +1,15 @@
 import creator from './creator';
-import {Listener, Method, Middleware, Parameters, Path, Routes, Token} from './types';
+import type {Listener, Method, Middleware, Parameters, Path, Position, Routes, Token} from './types';
 
 const VARIABLE = ':';
 const PATH = '/';
 const WILDCARD = '*';
 
-export const LISTENER = Symbol.for('listener');
+export const SYMBOL = Symbol.for('symbol');
 
 enum Type {
-    MIDDLEWARE = '#',
-    LISTENER = '$'
+    MIDDLEWARE = 'M',
+    LISTENER = 'L'
 }
 
 /**
@@ -17,7 +17,8 @@ enum Type {
  */
 const factory = () => {
     const routes: Routes = {};
-    const cache = creator('cache')();
+    const cache = creator('cache')<[Middleware[], Position]>();
+    let position: Position = 0 as Position;
 
     /**
      *
@@ -42,81 +43,87 @@ const factory = () => {
 
     /**
      *
+     * @param type
      * @param tokens
-     * @param listener
-     * @param routes
+     * @param target
+     * @param position
+     * @param context
      */
-    const up = (tokens: Token[], listener: Listener | Middleware, routes: Routes) => {
+    const insert = (type: Type, tokens: Token[], target, position: Position, context: Routes): boolean => {
         const token = tokens.shift();
-
         if (!token) {
             return true;
         }
 
-        if (!routes[token]) {
-            routes[token] = {};
+        if (!context[token]) {
+            context[token] = {};
+            context[token][SYMBOL] = [];
         }
 
         if (tokens.length === 0) {
-            routes[token][LISTENER] = listener;
+            if (type === Type.LISTENER) {
+                context[token][SYMBOL] = [
+                    target,
+                    position,
+                ];
+            } else {
+                if (!Array.isArray(target)) {
+                    target = [target];
+                }
+
+                for (const fn of target) {
+                    context[token][SYMBOL].push([
+                        fn,
+                        position,
+                    ]);
+                }
+            }
         }
 
-        return up(tokens, listener, routes[token]);
+        return insert(type, tokens, target, position, context[token]);
     };
 
     /**
      *
+     * @param type
      * @param tokens
-     * @param routes
+     * @param context
      */
-    const down = (tokens: Token[], routes: Routes): Listener | Middleware => {
+    const eject = <T>(type: Type, tokens: Token[], context: Routes): T => {
         let token = tokens.shift();
-
         if (!token) {
-            return routes[LISTENER];
-        } else if (routes[WILDCARD]) {
-            if (routes[WILDCARD][LISTENER]) {
-                return routes[WILDCARD][LISTENER];
+            return context[SYMBOL];
+        } else if (context[WILDCARD]) {
+            if (context[WILDCARD][SYMBOL].length) {
+                return context[WILDCARD][SYMBOL];
             }
 
-            return down(tokens, routes[WILDCARD]);
-        } else if (!routes[token]) {
-            token = keys(routes)
+            return eject<T>(type, tokens, context[WILDCARD]);
+        } else if (!context[token]) {
+            token = keys(context)
                 .find((route) => route[0] === VARIABLE)
             ;
 
             if (!token) {
-                return null;
+                return [] as unknown as T;
             }
         }
 
-        return down(tokens, routes[token]);
-    };
-
-    /**
-     *
-     * @param method
-     * @param path
-     * @param listener
-     */
-    const set = (method: Method, path: Path, listener: Listener | Middleware) => {
-        const type = !method && Type.MIDDLEWARE || Type.LISTENER;
-        const tokens = tokenize(type, method, path);
-
-        cache.del(tokens);
-
-        up(tokens, listener, routes);
+        return eject<T>(type, tokens, context[token]);
     };
 
     /**
      *
      * @param path
+     * @param position
      */
-    const reduce = (path: Path): Middleware[] => {
+    const reduce = (path: Path, position?: Position): Middleware[] => {
         const tokens = tokenize(Type.MIDDLEWARE, null, path);
-
         if (cache.has(tokens)) {
-            return cache.get(tokens);
+            const [middlewares, current] = cache.get(tokens);
+            if (position == null || current < position) {
+                return middlewares;
+            }
         }
 
         /**
@@ -126,22 +133,25 @@ const factory = () => {
          * @param i
          * @param tokens
          */
-        const reducer = (acc: Partial<Middleware>[], token: Token, i: number, tokens: Token[]) => {
+        const reducer = (acc: Middleware[], token: Token, i: number, tokens: Token[]): Middleware[] => {
             const partial = tokens.slice(0, i + 1);
-            const fn = down(partial, routes);
+            const middlewares = eject<Array<[Middleware, Position]>>(Type.MIDDLEWARE, partial, routes)
+                .filter(Boolean)
+                .filter(([, current]) => position == null || current < position)
+                .map(([fn]) => fn)
+            ;
 
-            if (!fn) {
-                return acc;
-            }
-
-            acc.push(fn);
-
-            return [].concat(...acc);
+            return [
+                ...acc,
+                ...middlewares,
+            ];
         };
 
         const reduced = tokens.reduce(reducer, []);
-
-        cache.set(tokens, reduced);
+        cache.set(tokens, [
+            reduced,
+            position,
+        ]);
 
         return reduced;
     };
@@ -153,7 +163,6 @@ const factory = () => {
      */
     const resolve = (method: Method, path: Path): Parameters => {
         const tokens = tokenize(Type.LISTENER, method, path);
-
         const context = {} as Parameters;
         let level = 0;
         let cursor = routes;
@@ -183,18 +192,37 @@ const factory = () => {
      *
      * @param method
      * @param path
+     * @param listener
      */
-    const get = (method: Method, path: Path): Listener | Middleware => {
-        const type = !method && Type.MIDDLEWARE || Type.LISTENER;
-        const token = tokenize(type, method, path);
+    const set = (method: Method, path: Path, listener: Listener | Middleware) => {
+        const type = (!method)
+            ? Type.MIDDLEWARE
+            : Type.LISTENER
+        ;
 
-        return down(token, routes);
+        const tokens = tokenize(type, method, path);
+        cache.del(tokens);
+
+        ++position;
+
+        insert(type, tokens, listener, position, routes);
+    };
+
+    /**
+     *
+     * @param method
+     * @param path
+     */
+    const get = (method: Method, path: Path): [Listener, Position] => {
+        const token = tokenize(Type.LISTENER, method, path);
+
+        return eject<[Listener, Position]>(Type.LISTENER, token, routes);
     };
 
     return {
-        set,
         reduce,
         resolve,
+        set,
         get,
     };
 };

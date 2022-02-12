@@ -99,8 +99,6 @@ const factory = (config: Config = {}): Router => {
      * @param listener
      */
     const on = (method: Method, path: string, listener: Listener): void => {
-        listener = chain(...middlewares, listener);
-
         routes.set(method, path as Path, listener);
     };
 
@@ -109,7 +107,7 @@ const factory = (config: Config = {}): Router => {
      * @param middleware
      */
     function use (middleware: Middleware): void {
-        middlewares.push(middleware);
+        routes.set(null, null, middleware);
     }
 
     /**
@@ -119,7 +117,7 @@ const factory = (config: Config = {}): Router => {
      * @returns {boolean}
      */
     const has = (method: Method, path: string): boolean => (
-        !!routes.get(method, path as Path)
+        !!routes.get(method, path as Path).length
     );
 
     /**
@@ -130,16 +128,18 @@ const factory = (config: Config = {}): Router => {
     const route: Listener = async <T>(req, res): Promise<T> => {
         const {url, method} = req;
         const {pathname} = parse(url, true) as any;
-        const listener = routes.get(method, pathname) as Listener;
 
-        if (!listener) {
-            return chain(...middlewares, final)(req, res);
-        }
-
+        const [listener, position] = routes.get(method, pathname);
+        const middlewares = routes.reduce(pathname, position);
         const parameters = routes.resolve(method, pathname);
-        const reduced = routes.reduce(pathname);
 
-        return chain(...reduced, listener, final)(req, res, parameters);
+        const stack = [
+            ...middlewares,
+            listener,
+            final,
+        ].filter(Boolean);
+
+        return chain(...stack)(req, res, parameters);
     };
 
     /**
