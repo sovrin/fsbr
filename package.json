@@ -1,6 +1,6 @@
 {
   "name": "fsbr",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "file structure based router for servers",
   "main": "./dist/index.js",
   "exports": "./dist/index.js",
