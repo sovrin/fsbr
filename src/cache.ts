@@ -1,10 +1,11 @@
-import {Cache, Middleware, Token} from './types';
+import type {Cache, Token} from './types';
 
 /**
  *
+ * @param length
  */
-const factory = (length = 1000) => {
-    const cache: Map<string, Middleware[]> = new Map();
+const factory = <T>(length = 1000) => {
+    const cache: Map<string, T> = new Map();
 
     /**
      *
@@ -27,7 +28,7 @@ const factory = (length = 1000) => {
      *
      * @param tokens
      */
-    const get = (tokens: Token[]): Middleware[] => {
+    const get = (tokens: Token[]): T => {
         const key = serialize(tokens);
 
         return cache.get(key);
@@ -38,7 +39,7 @@ const factory = (length = 1000) => {
      * @param tokens
      * @param value
      */
-    const set = (tokens: Token[], value: Middleware[]): Cache => {
+    const set = (tokens: Token[], value: T): Cache<T> => {
         const key = serialize(tokens);
 
         if (cache.size >= length) {
@@ -63,7 +64,7 @@ const factory = (length = 1000) => {
     /**
      *
      */
-    const context = (): Cache => ({
+    const context = (): Cache<T> => ({
         has,
         get,
         set,

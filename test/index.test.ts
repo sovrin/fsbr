@@ -173,6 +173,7 @@ describe('fsbr', () => {
             },
         ];
 
+        // @ts-ignore
         on('GET', '/custom', chain(...middlewares, (req, res) => {
             // @ts-ignore
             send(res, 200, {data: res.data});

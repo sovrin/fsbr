@@ -1,11 +1,21 @@
 import creator from './creator';
-import type {Listener, Method, Middleware, Parameters, Path, Position, Routes, Token} from './types';
+import type {
+    Listener,
+    Method,
+    Middleware,
+    Parameters,
+    Path,
+    Position,
+    Routes,
+    Token,
+} from './types';
 
 const VARIABLE = ':';
 const PATH = '/';
 const WILDCARD = '*';
 
-export const SYMBOL = Symbol.for('symbol');
+export const LISTENER = Symbol.for('listener');
+export const MIDDLEWARES = Symbol.for('middlewares');
 
 enum Type {
     MIDDLEWARE = 'M',
@@ -30,15 +40,15 @@ const factory = () => {
         [type, method, path].filter(Boolean)
             .join(PATH)
             .split(PATH)
-            .filter(Boolean)
+            .filter(Boolean) as Token[]
     );
 
     /**
      *
      * @param routes
      */
-    const keys = (routes: Routes) => (
-        Object.keys(routes)
+    const keys = (routes: Routes): Token[] => (
+        Object.keys(routes) as Token[]
     );
 
     /**
@@ -57,12 +67,13 @@ const factory = () => {
 
         if (!context[token]) {
             context[token] = {};
-            context[token][SYMBOL] = [];
+            context[token][LISTENER] = [];
+            context[token][MIDDLEWARES] = [];
         }
 
         if (tokens.length === 0) {
             if (type === Type.LISTENER) {
-                context[token][SYMBOL] = [
+                context[token][LISTENER] = [
                     target,
                     position,
                 ];
@@ -72,7 +83,7 @@ const factory = () => {
                 }
 
                 for (const fn of target) {
-                    context[token][SYMBOL].push([
+                    context[token][MIDDLEWARES].push([
                         fn,
                         position,
                     ]);
@@ -89,13 +100,17 @@ const factory = () => {
      * @param tokens
      * @param context
      */
-    const eject = <T>(type: Type, tokens: Token[], context: Routes): T => {
+    const eject = <T>(type: Type, tokens: Token[], context: Routes) => {
         let token = tokens.shift();
         if (!token) {
-            return context[SYMBOL];
+            if (type === Type.LISTENER) {
+                return context[LISTENER];
+            }
+
+            return context[MIDDLEWARES];
         } else if (context[WILDCARD]) {
-            if (context[WILDCARD][SYMBOL].length) {
-                return context[WILDCARD][SYMBOL];
+            if (context[WILDCARD][LISTENER].length) {
+                return context[WILDCARD][LISTENER];
             }
 
             return eject<T>(type, tokens, context[WILDCARD]);

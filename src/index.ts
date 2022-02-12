@@ -11,7 +11,8 @@ import type {
     Request,
     Response,
     ErrorArgs,
-    ListenerArgs, Parameters,
+    ListenerArgs,
+    Parameters,
 } from './types';
 
 /**
@@ -20,7 +21,6 @@ import type {
 const factory = (config: Config = {}): Router => {
     const routes = creator('routes')();
     const final = creator('final')(config);
-    const middlewares: Middleware[] = [];
 
     const {
         entry = 'index',
@@ -31,7 +31,7 @@ const factory = (config: Config = {}): Router => {
      *
      * @param pool
      */
-    const chain = (...pool: (Listener | Middleware)[]): any => {
+    const chain = (...pool: Array<Listener | Middleware>): any => {
         pool = Array.from(pool)
             .filter(Boolean)
         ;
@@ -126,10 +126,12 @@ const factory = (config: Config = {}): Router => {
      */
     const route: Listener = async <T>(req, res): Promise<T> => {
         const {url, method, headers: {host}} = req;
-        const {pathname} = new URL(url, `https://${host}`) as any;
-        const [listener, position] = routes.get(method, pathname);
-        const middlewares = routes.reduce(pathname, position);
-        const parameters = routes.resolve(method, pathname);
+        const {pathname} = new URL(url, `https://${host}`);
+
+        const path = pathname as Path;
+        const [listener, position] = routes.get(method, path);
+        const middlewares = routes.reduce(path, position);
+        const parameters = routes.resolve(method, path);
 
         const stack = [
             ...middlewares,

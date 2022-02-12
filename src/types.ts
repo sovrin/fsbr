@@ -1,10 +1,10 @@
 import {IncomingMessage, ServerResponse} from 'http';
-import {LISTENER} from './routes';
+import {LISTENER, MIDDLEWARES} from './routes';
 
 type Opaque<K, T> = T & { __TYPE__: K };
 
 export type Request = IncomingMessage & {
-    method: Method,
+    method: Method;
 };
 
 export type Response = ServerResponse;
@@ -15,8 +15,8 @@ export type Router = {
     use(middleware: Middleware): void,
     has(method: Method, path: string): boolean,
     on(method: Method, path: string, listener: Listener): void,
-    chain(...middlewares: (Listener | Middleware)[]): Listener,
-    route(req: Request, res: Response): Promise<any>,
+    chain(...pool: Array<Listener | Middleware>): Listener,
+    route<T>(req: Request, res: Response): Promise<T>,
     register(base: string, cb?: () => void): void,
 }
 
@@ -26,10 +26,10 @@ export type Config = {
     dev?: boolean,
 };
 
-export type Cache = {
+export type Cache<T> = {
     has(tokens: Token[]): boolean,
-    get(tokens: Token[]): Middleware[],
-    set(tokens: Token[], value: Middleware[]): Cache,
+    get(tokens: Token[]): T,
+    set(tokens: Token[], value: T): Cache<T>,
     del(tokens: Token[]),
 }
 
@@ -56,11 +56,20 @@ export type Next = (error?: any) => Middleware;
 
 export type Middleware = (req: Request, res: Response, next: Next, error?: any) => void;
 
-export type Token = string;
+export type Token = Opaque<'Token', string>;
+
+export type Position = Opaque<'Position', number>;
 
 export type Routes = {
-    [LISTENER]?: Listener | Middleware
-    [key: string]: Routes;
+    [LISTENER]?: [
+        Listener?,
+        Position?,
+    ],
+    [MIDDLEWARES]?: Array<[
+        Middleware,
+        Position,
+    ]>,
+    [token: Token]: Routes;
 }
 
 export type ErrorArgs = [
@@ -69,4 +78,4 @@ export type ErrorArgs = [
 
 export type ListenerArgs = [
     Request, Response, Next | Parameters
-]
+];
