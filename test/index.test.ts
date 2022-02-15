@@ -803,6 +803,70 @@ describe('fsbr', () => {
             });
         });
 
+        describe('nested middleware folder structure with global and nested middlewares - fixtures/nestedmiddlewares', () => {
+            describe('with no tailing middlewares', () => {
+                const {register, route, use} = router();
+
+                use((req, res, next) => {
+                    // @ts-ignore
+                    res.data = ['baz'];
+
+                    next();
+                });
+
+                register('./test/fixtures/nestedmiddlewares');
+
+                it('should respond with 200 to GET:/', (done) => {
+                    request(route)
+                        .get('/')
+                        .expect('Content-Type', /json/)
+                        .expect({'data': ['baz', 'a2']})
+                        .expect(200, done)
+                    ;
+                });
+
+                it('should respond with 200 to GET:/w', (done) => {
+                    request(route)
+                        .get('/w')
+                        .expect('Content-Type', /json/)
+                        .expect({'data': ['baz', 'a2', 'w']})
+                        .expect(200, done)
+                    ;
+                });
+            })
+
+            describe('with tailing middlewares', () => {
+                describe('later bound middlewares are ignored', () => {
+                    const {register, use, route} = router();
+
+                    use((req, res, next) => {
+                        // @ts-ignore
+                        res.data = 'foo';
+
+                        next();
+                    });
+
+                    register('./test/fixtures/errorhandling');
+
+                    use((req, res, next) => {
+                        // @ts-ignore
+                        res.data = 'bar';
+
+                        next();
+                    });
+
+                    it('should ignore last middleware', (done) => {
+                        request(route)
+                            .get('/w')
+                            .expect('Content-Type', /json/)
+                            .expect({'data': 'foo'})
+                            .expect(200, done)
+                        ;
+                    });
+                });
+            });
+        })
+
         describe('error handling in middleware - fixtures/errorhandling', () => {
             describe('inside handler', () => {
                 const errors = [];
