@@ -1,6 +1,6 @@
 module.exports = [
     (req, res, next) => {
-        res.data.push('y');
+        res.data.push('y_index');
 
         return next();
     },

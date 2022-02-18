@@ -781,7 +781,7 @@ describe('fsbr', () => {
                 request(route)
                     .get('/w/x/y/z')
                     .expect('Content-Type', /json/)
-                    .expect({'data': ['a1', 'a2', 'w', 'y', 'z']})
+                    .expect({'data': ['a1', 'a2', 'w_index', 'y_index', 'z_index']})
                     .expect(200, done)
                 ;
             });
@@ -790,7 +790,7 @@ describe('fsbr', () => {
                 request(route)
                     .get('/w/x/y/z/a/b/c/d')
                     .expect('Content-Type', /json/)
-                    .expect({'data': ['a1', 'a2', 'w', 'y', 'z', 'c', 'd']})
+                    .expect({'data': ['a1', 'a2', 'w_index', 'y_index', 'z_index', 'c', 'd']})
                     .expect(200, done)
                 ;
             });
@@ -820,7 +820,7 @@ describe('fsbr', () => {
                     request(route)
                         .get('/')
                         .expect('Content-Type', /json/)
-                        .expect({'data': ['baz', 'a2']})
+                        .expect({'data': ['baz', 'a1', 'a2']})
                         .expect(200, done)
                     ;
                 });
@@ -829,7 +829,7 @@ describe('fsbr', () => {
                     request(route)
                         .get('/w')
                         .expect('Content-Type', /json/)
-                        .expect({'data': ['baz', 'a2', 'w']})
+                        .expect({'data': ['baz', 'a1', 'a2', 'w_index']})
                         .expect(200, done)
                     ;
                 });
@@ -841,12 +841,12 @@ describe('fsbr', () => {
 
                     use((req, res, next) => {
                         // @ts-ignore
-                        res.data = 'foo';
+                        res.data = [];
 
                         next();
                     });
 
-                    register('./test/fixtures/errorhandling');
+                    register('./test/fixtures/nestedmiddlewares');
 
                     use((req, res, next) => {
                         // @ts-ignore
@@ -857,9 +857,9 @@ describe('fsbr', () => {
 
                     it('should ignore last middleware', (done) => {
                         request(route)
-                            .get('/w')
+                            .get('/w/yeet')
                             .expect('Content-Type', /json/)
-                            .expect({'data': 'foo'})
+                            .expect({'data': ['a1', 'a2', 'w_index', 'wildcard_index']})
                             .expect(200, done)
                         ;
                     });
