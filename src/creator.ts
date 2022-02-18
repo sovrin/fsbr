@@ -1,6 +1,6 @@
 import routes from './routes';
 import cache from './cache';
-import {final} from './listeners';
+import {final} from './middlewares';
 
 type FactoryTypes = typeof factories;
 type Keys = keyof FactoryTypes;

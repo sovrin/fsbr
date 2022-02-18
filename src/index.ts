@@ -47,8 +47,8 @@ const factory = (config: Config = {}): Router => {
          * @param parameters
          */
         return async (req: Request, res: Response, parameters?: Parameters): Promise<void> => {
-            let listeners = pool.filter((listener) => (
-                listener.length !== 4
+            let fns = pool.filter((fn) => (
+                fn.length !== 4
             ));
 
             /**
@@ -57,31 +57,30 @@ const factory = (config: Config = {}): Router => {
              */
             const next = async (error: unknown = null) => {
                 if (error && pool) {
-                    listeners = pool.filter((listener) => (
-                        listener.length === 4
+                    fns = pool.filter((fn) => (
+                        fn.length === 4
                     ));
 
                     pool = null;
                 }
 
-                const listener = listeners.shift();
-
-                if (!listener) {
+                const fn = fns.shift();
+                if (!fn) {
                     return final(req, res, null, error);
                 }
 
-                const arg = (listeners.length == 0 && !error)
+                const arg = (fns.length == 0 && !error)
                     ? parameters
                     : next
                 ;
 
-                const args = (listener.length === 4)
+                const args = (fn.length === 4)
                     ? [req, res, arg, error] as ErrorArgs
                     : [req, res, arg] as ListenerArgs
                 ;
 
                 try {
-                    return await listener.apply(null, args);
+                    return await fn.apply(null, args);
                 } catch (error) {
                     await next(error);
                 }
@@ -191,7 +190,6 @@ const factory = (config: Config = {}): Router => {
                 }
 
                 let listener = require(pointer);
-
                 if (listener.default && typeof listener.default === 'function') {
                     listener = listener.default;
                 }

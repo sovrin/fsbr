@@ -456,7 +456,7 @@ describe('fsbr', () => {
             });
         });
 
-        describe('trigger final handler twice', () => {
+        describe('trigger final middleware twice', () => {
             const {on, route, use} = router();
 
             use((req, res, next, error) => {
