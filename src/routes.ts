@@ -10,7 +10,7 @@ import type {
     Token,
 } from './types';
 
-const VARIABLE = ':';
+const VARIABLE = /^(:.*)|(\[.*\])$/;
 const PATH = '/';
 const WILDCARD = '*';
 
@@ -116,7 +116,7 @@ const factory = () => {
             return eject<T>(type, tokens, context[WILDCARD]);
         } else if (!context[token]) {
             token = keys(context)
-                .find((route) => route[0] === VARIABLE)
+                .find((route) => VARIABLE.test(route))
             ;
 
             if (!token) {
@@ -185,10 +185,10 @@ const factory = () => {
         while (cursor && level < tokens.length) {
             const current = tokens[level];
             const route = keys(cursor)
-                .find((item) => item === current || item[0] === VARIABLE)
+                .find((item) => item === current || VARIABLE.test(item))
             ;
 
-            if (route && route[0] === VARIABLE) {
+            if (route && VARIABLE.test(route)) {
                 const key = route.slice(1)
                     .toLowerCase()
                 ;
