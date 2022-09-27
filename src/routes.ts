@@ -48,7 +48,16 @@ const factory = () => {
      * @param routes
      */
     const keys = (routes: Routes): Token[] => (
-        Object.keys(routes) as Token[]
+        Object.keys(routes)
+            .reduce((acc, key) => {
+                (key[0] !== ':')
+                    ? acc[0].push(key)
+                    : acc[1].push(key)
+                ;
+
+                return acc;
+            }, [[], []])
+            .flat() as Token[]
     );
 
     /**
