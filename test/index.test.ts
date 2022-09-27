@@ -123,11 +123,28 @@ describe('fsbr', () => {
                 send(res, 200, match);
             });
 
+            on('GET', '/user/:id/:avatars/:number', (req, res, match: any) => {
+                send(res, 200, match);
+            });
+
+            on('GET', '/user/:id/random/:number', (req, res, match: any) => {
+                send(res, 200, match);
+            });
+
             it('should respond 200 to GET:/user/123 with match', (done) => {
                 request(route)
                     .get('/user/123')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123'})
+                    .expect(200, done)
+                ;
+            });
+
+            it('should respond 200 to GET:/user/123/random/2 with match', (done) => {
+                request(route)
+                    .get('/user/123/random/2')
+                    .expect('Content-Type', /json/)
+                    .expect({'id': '123', 'number': '2'})
                     .expect(200, done)
                 ;
             });
