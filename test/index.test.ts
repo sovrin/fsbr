@@ -119,6 +119,10 @@ describe('fsbr', () => {
         describe('url variable', () => {
             const {on, route} = router();
 
+            on('GET', '/:id.foobar', (req, res, param) => {
+                send(res, 200, param);
+            });
+
             on('GET', '/user/:id', (req, res, match: any) => {
                 send(res, 200, match);
             });
@@ -145,6 +149,15 @@ describe('fsbr', () => {
                     .get('/user/123/random/2')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123', 'number': '2'})
+                    .expect(200, done)
+                ;
+            });
+
+            it('should respond 200 to GET:/foobar.foobar with match', (done) => {
+                request(route)
+                    .get('/foobar.foobar')
+                    .expect('Content-Type', /json/)
+                    .expect({'id': 'foobar'})
                     .expect(200, done)
                 ;
             });
@@ -496,10 +509,11 @@ describe('fsbr', () => {
     });
 
     describe('register', () => {
-        it('should call callback on done', (done) => {
+        it('should return true when done registering', () => {
             const {register} = router();
 
-            register('./test/fixtures/plain', done);
+            const done = register('./test/fixtures/plain');
+            assert.equal(done, true, 'should return true when done registering');
         });
 
         describe('not-existing folder', () => {
@@ -553,6 +567,33 @@ describe('fsbr', () => {
             it('should respond with 200 to GET:/user/123', (done) => {
                 request(route)
                     .get('/user/123')
+                    .expect('Content-Type', /json/)
+                    .expect({'id': '123'})
+                    .expect(200, done)
+                ;
+            });
+
+            it('should respond with 200 to GET:/user/123.foobar', (done) => {
+                request(route)
+                    .get('/user/123.foobar')
+                    .expect('Content-Type', /json/)
+                    .expect({'id': '123', 'ext': 'foobar'})
+                    .expect(200, done)
+                ;
+            });
+
+            it('should respond with 200 to GET:/user/123.1', (done) => {
+                request(route)
+                    .get('/user/123.1')
+                    .expect('Content-Type', /json/)
+                    .expect({'id': '123'})
+                    .expect(200, done)
+                ;
+            });
+
+            it('should respond with 200 todas GET:/user/123.html', (done) => {
+                request(route)
+                    .get('/user/123.html')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123'})
                     .expect(200, done)
