@@ -1,6 +1,7 @@
 import {readdirSync, statSync} from 'fs';
 import {basename, extname, resolve} from 'path';
 import creator from './creator';
+
 import type {
     Method,
     Config,
@@ -13,6 +14,7 @@ import type {
     ErrorArgs,
     ListenerArgs,
     Parameters,
+    Next,
 } from './types';
 
 /**
@@ -31,14 +33,10 @@ const factory = (config: Config = {}): Router => {
      *
      * @param pool
      */
-    const chain = (...pool: Array<Listener | Middleware>): any => {
+    const chain = <T >(...pool: Array<Middleware | Listener>): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
         pool = Array.from(pool)
             .filter(Boolean)
         ;
-
-        if (pool.length === 1) {
-            return pool[0];
-        }
 
         /**
          *
@@ -46,7 +44,7 @@ const factory = (config: Config = {}): Router => {
          * @param res
          * @param parameters
          */
-        return async (req: Request, res: Response, parameters?: Parameters): Promise<void> => {
+        return async (req: Request, res: Response, parameters?: Parameters): Promise<T> => {
             let fns = pool.filter((fn) => (
                 fn.length !== 4
             ));
@@ -80,6 +78,7 @@ const factory = (config: Config = {}): Router => {
                 ;
 
                 try {
+                    // eslint-disable-next-line prefer-spread
                     return await fn.apply(null, args);
                 } catch (error) {
                     await next(error);
@@ -104,9 +103,9 @@ const factory = (config: Config = {}): Router => {
      *
      * @param middleware
      */
-    function use (middleware: Middleware): void {
+    const use = (middleware: Middleware): void => {
         routes.set(null, null, middleware);
-    }
+    };
 
     /**
      *
@@ -123,7 +122,7 @@ const factory = (config: Config = {}): Router => {
      * @param req
      * @param res
      */
-    const route: Listener = async <T>(req, res): Promise<T> => {
+    const route: Listener = async <T> (req: Request, res: Response): Promise<T> => {
         const {url, method, headers: {host}} = req;
         const {pathname} = new URL(url, `https://${host}`);
 
@@ -138,15 +137,14 @@ const factory = (config: Config = {}): Router => {
             final,
         ].filter(Boolean);
 
-        return chain(...stack)(req, res, parameters);
+        return chain<T>(...stack)(req, res, parameters);
     };
 
     /**
      *
      * @param base
-     * @param cb
      */
-    const register = (base: string, cb?: () => void): void => {
+    const register = (base: string): boolean => {
         base = resolve(base);
 
         /**
@@ -200,7 +198,6 @@ const factory = (config: Config = {}): Router => {
 
                 const pathname = path.replace(base, '')
                     .replace(/\\/g, '/')
-                    .replace(/\[(.*?)\]/g, ':$1') as Path
                 ;
 
                 on(method, pathname, listener);
@@ -212,7 +209,8 @@ const factory = (config: Config = {}): Router => {
         };
 
         traverse(base);
-        cb && cb();
+
+        return true;
     };
 
     return {
@@ -231,4 +229,12 @@ const factory = (config: Config = {}): Router => {
  * Time: 10:46
  */
 export default factory;
-export type {Middleware, Config, Method, Listener, Response, Request};
+export type {
+    Middleware,
+    Config,
+    Method,
+    Listener,
+    Response,
+    Request,
+    Next,
+};

@@ -1,5 +1,5 @@
 import {IncomingMessage, ServerResponse} from 'http';
-import {LISTENER, MIDDLEWARES} from './routes';
+import {LISTENERS, MIDDLEWARES, RESOLVER} from './const';
 
 type Opaque<K, T> = T & { __TYPE__: K };
 
@@ -12,12 +12,12 @@ export type Response = ServerResponse;
 export type Path = Opaque<'Path', string>;
 
 export type Router = {
-    use(middleware: Middleware): void,
-    has(method: Method, path: string): boolean,
-    on(method: Method, path: string, listener: Listener): void,
-    chain(...pool: Array<Listener | Middleware>): Listener,
-    route<T>(req: Request, res: Response): Promise<T>,
-    register(base: string, cb?: () => void): void,
+    use (middleware: Middleware): void,
+    has (method: Method, path: string): boolean,
+    on (method: Method, path: string, listener: Listener): unknown,
+    chain (...pool: Array<Listener | Middleware>): Listener,
+    route (req: Request, res: Response): unknown,
+    register (base: string): boolean,
 }
 
 export type Config = {
@@ -30,7 +30,7 @@ export type Cache<T> = {
     has(tokens: Token[]): boolean,
     get(tokens: Token[]): T,
     set(tokens: Token[], value: T): Cache<T>,
-    del(tokens: Token[]),
+    del(tokens: Token[]): void,
 }
 
 export type Method = typeof Methods[number];
@@ -50,25 +50,32 @@ export const Methods = [
 
 export type Parameters = Opaque<'Parameters', object>;
 
-export type Listener = (req: Request, res: Response, params?: Parameters) => any;
+export type Listener = (req: Request, res: Response, params?: Parameters) => unknown;
 
-export type Next = (error?: any) => Middleware;
+export type Next = (error?: unknown) => Middleware;
 
-export type Middleware = (req: Request, res: Response, next: Next, error?: any) => void;
+export type Middleware = (req: Request, res: Response, next: Next, error?: unknown) => unknown;
 
 export type Token = Opaque<'Token', string>;
 
 export type Position = Opaque<'Position', number>;
 
 export type Routes = {
-    [LISTENER]?: [
+    [LISTENERS]?: [
         Listener?,
         Position?,
+        Token?,
     ],
     [MIDDLEWARES]?: Array<[
         Middleware,
         Position,
     ]>,
+    [RESOLVER]?: {
+        key: Token,
+        variables: string[],
+        type: 'static' | 'dynamic',
+    },
+    '*'?: Routes,
     [token: Token]: Routes;
 }
 
