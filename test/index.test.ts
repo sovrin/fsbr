@@ -44,6 +44,28 @@ describe('fsbr', () => {
         describe('wildcard url', () => {
             const {on, route} = router();
 
+            on('GET', '*', (req, res) => {
+                send(res, 200);
+            });
+
+            it('should pass through with 200 to GET:/api/user/a/b/c/d', (done) => {
+                request(route)
+                    .get('/api/user/a/b/c/d')
+                    .expect(200, done)
+                ;
+            });
+
+            it('should pass through with 200 to GET index', (done) => {
+                request(route)
+                    .get('')
+                    .expect(200, done)
+                ;
+            });
+        });
+
+        describe('nested wildcard url', () => {
+            const {on, route} = router();
+
             on('GET', '/api/user/*', (req, res) => {
                 send(res, 200);
             });
