@@ -44,10 +44,6 @@ const factory = () => {
      */
     const find = (routes: Routes, needle: string): Token => {
         const tokens = Object.keys(routes)
-            .filter((key) => key !== needle)
-            .filter((key) => key !== WILDCARD)
-            .filter((key) => key !== Type.LISTENER)
-            .filter((key) => key !== Type.MIDDLEWARE)
             .filter((key) => key.match(VARIABLE))
             .filter((key) => key.split('.').length === needle.split('.').length)
             .sort((a, b) => a.match(VARIABLE).length - b.match(VARIABLE).length)
@@ -134,10 +130,16 @@ const factory = () => {
      * @param type
      * @param tokens
      * @param context
+     * @param level
      */
-    const eject = <T> (type: Type, tokens: Token[], context: Routes): T => {
+    const eject = <T> (type: Type, tokens: Token[], context: Routes, level = 2): T => {
         let token = tokens.shift();
+
         if (!token) {
+            if (level === 0 && context[WILDCARD]) {
+                return eject<T>(type, tokens, context[WILDCARD], --level);
+            }
+
             switch (type) {
             case Type.LISTENER:
                 return context[LISTENERS] as T;
@@ -161,7 +163,7 @@ const factory = () => {
                 return wildcardContext[RESOLVER] as T;
             }
 
-            return eject<T>(type, tokens, wildcardContext);
+            return eject<T>(type, tokens, wildcardContext, --level);
         }
 
         if (!context[token]) {
@@ -177,7 +179,7 @@ const factory = () => {
             }
         }
 
-        return eject<T>(type, tokens, context[token]);
+        return eject<T>(type, tokens, context[token], --level);
     };
 
     /**
