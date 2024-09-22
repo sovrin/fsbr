@@ -1,44 +1,24 @@
 import type {Cache, Token} from './types';
 
-/**
- *
- * @param length
- */
-const factory = <T>(length = 1000) => {
+const factory = <T> (length = 1000) => {
     const cache: Map<string, T> = new Map();
 
-    /**
-     *
-     */
     const serialize = (tokens: Token[]): string => (
         tokens.join('|')
     );
 
-    /**
-     *
-     * @param tokens
-     */
     const has = (tokens: Token[]): boolean => {
         const key = serialize(tokens);
 
         return cache.has(key);
     };
 
-    /**
-     *
-     * @param tokens
-     */
     const get = (tokens: Token[]): T => {
         const key = serialize(tokens);
 
         return cache.get(key);
     };
 
-    /**
-     *
-     * @param tokens
-     * @param value
-     */
     const set = (tokens: Token[], value: T): Cache<T> => {
         const key = serialize(tokens);
 
@@ -51,19 +31,12 @@ const factory = <T>(length = 1000) => {
         return context();
     };
 
-    /**
-     *
-     * @param tokens
-     */
     const del = (tokens: Token[]): boolean => {
         const key = serialize(tokens);
 
         return cache.delete(key);
     };
 
-    /**
-     *
-     */
     const context = (): Cache<T> => ({
         has,
         get,

@@ -12,10 +12,6 @@ const factories = {
     final,
 };
 
-/**
- *
- * @param k
- */
 const factory = <K extends Keys>(k: K): Factory<K> => (
     factories[k]
 );

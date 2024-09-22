@@ -17,9 +17,6 @@ import type {
     Next,
 } from './types';
 
-/**
- *
- */
 const factory = (config: Config = {}): Router => {
     const routes = creator('routes')();
     const final = creator('final')(config);
@@ -29,30 +26,15 @@ const factory = (config: Config = {}): Router => {
         ext = '.js',
     }: Config = config;
 
-    /**
-     *
-     * @param pool
-     */
-    const chain = <T >(...pool: Array<Middleware | Listener>): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
+    const chain = <T> (...pool: Array<Middleware | Listener>): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
         pool = Array.from(pool)
-            .filter(Boolean)
-        ;
+            .filter(Boolean);
 
-        /**
-         *
-         * @param req
-         * @param res
-         * @param parameters
-         */
         return async (req: Request, res: Response, parameters?: Parameters): Promise<T> => {
             let fns = pool.filter((fn) => (
                 fn.length !== 4
             ));
 
-            /**
-             *
-             * @param error
-             */
             const next = async (error: unknown = null) => {
                 if (error && pool) {
                     fns = pool.filter((fn) => (
@@ -69,13 +51,11 @@ const factory = (config: Config = {}): Router => {
 
                 const arg = (fns.length == 0 && !error)
                     ? parameters
-                    : next
-                ;
+                    : next;
 
                 const args = (fn.length === 4)
                     ? [req, res, arg, error] as ErrorArgs
-                    : [req, res, arg] as ListenerArgs
-                ;
+                    : [req, res, arg] as ListenerArgs;
 
                 try {
                     // eslint-disable-next-line prefer-spread
@@ -89,39 +69,18 @@ const factory = (config: Config = {}): Router => {
         };
     };
 
-    /**
-     *
-     * @param method
-     * @param path
-     * @param listener
-     */
     const on = (method: Method, path: string, listener: Listener): void => {
         routes.set(method, path as Path, listener);
     };
 
-    /**
-     *
-     * @param middleware
-     */
     const use = (middleware: Middleware): void => {
         routes.set(null, null, middleware);
     };
 
-    /**
-     *
-     * @param method
-     * @param path
-     * @returns {boolean}
-     */
     const has = (method: Method, path: string): boolean => (
         !!routes.get(method, path as Path).length
     );
 
-    /**
-     *
-     * @param req
-     * @param res
-     */
     const route: Listener = async <T> (req: Request, res: Response): Promise<T> => {
         const {url, method, headers: {host}} = req;
         const {pathname} = new URL(url, `https://${host}`);
@@ -140,17 +99,9 @@ const factory = (config: Config = {}): Router => {
         return chain<T>(...stack)(req, res, parameters);
     };
 
-    /**
-     *
-     * @param base
-     */
     const register = (base: string): boolean => {
         base = resolve(base);
 
-        /**
-         *
-         * @param path
-         */
         const traverse = (path: string): void => {
             const absolute = resolve(path);
 
@@ -164,18 +115,13 @@ const factory = (config: Config = {}): Router => {
 
                 const pathname = path.replace(base, '')
                     .replace(/[\\/]/g, '/')
-                    .slice(1) as Path
-                ;
+                    .slice(1) as Path;
 
                 routes.set(null, pathname, middleware);
             } catch (e) {
                 // hello darkness, my old friend
             }
 
-            /**
-             *
-             * @param name
-             */
             const bind = (name: string): void => {
                 const pointer = resolve(absolute, name);
 
@@ -193,12 +139,10 @@ const factory = (config: Config = {}): Router => {
                 }
 
                 const method = basename(name, ext)
-                    .toUpperCase() as Method
-                ;
+                    .toUpperCase() as Method;
 
                 const pathname = path.replace(base, '')
-                    .replace(/\\/g, '/')
-                ;
+                    .replace(/\\/g, '/');
 
                 on(method, pathname, listener);
             };

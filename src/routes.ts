@@ -13,20 +13,11 @@ enum Type {
     RESOLVER = '/Resolver/',
 }
 
-/**
- *
- */
 const factory = () => {
     const routes: Routes = {};
     const cache = creator('cache')<[Middleware[], Position]>();
     let position: Position = 0 as Position;
 
-    /**
-     *
-     * @param type
-     * @param method
-     * @param path
-     */
     const tokenize = (type: Type, method: Method, path: Path): Token[] => (
         [
             type,
@@ -37,17 +28,11 @@ const factory = () => {
         ] as Token[]
     );
 
-    /**
-     *
-     * @param routes
-     * @param needle
-     */
     const find = (routes: Routes, needle: string): Token => {
         const tokens = Object.keys(routes)
             .filter((key) => key.match(VARIABLE))
             .filter((key) => key.split('.').length === needle.split('.').length)
-            .sort((a, b) => a.match(VARIABLE).length - b.match(VARIABLE).length)
-        ;
+            .sort((a, b) => a.match(VARIABLE).length - b.match(VARIABLE).length);
 
         for (const token of tokens) {
             const needleParts = needle.split('.');
@@ -69,27 +54,14 @@ const factory = () => {
         }
     };
 
-    /**
-     *
-     * @param route
-     */
     const parse = (route: string): string[] => {
         return Array.from(matches(route, VARIABLE))
             .map((matches) => matches.filter(Boolean))
             .map(([, match]) => match);
     };
 
-    /**
-     *
-     * @param type
-     * @param tokens
-     * @param target
-     * @param position
-     * @param context
-     */
     const insert = (type: Type, tokens: Token[], target, position: Position, context: Routes): boolean => {
         const token = tokens.shift();
-
         if (!token) {
             return true;
         }
@@ -125,13 +97,6 @@ const factory = () => {
         return insert(type, tokens, target, position, context[token]);
     };
 
-    /**
-     *
-     * @param type
-     * @param tokens
-     * @param context
-     * @param level
-     */
     const eject = <T> (type: Type, tokens: Token[], context: Routes, level = 2): T => {
         let token = tokens.shift();
 
@@ -182,11 +147,6 @@ const factory = () => {
         return eject<T>(type, tokens, context[token], --level);
     };
 
-    /**
-     *
-     * @param path
-     * @param position
-     */
     const reduce = (path: Path, position?: Position): Middleware[] => {
         const tokens = tokenize(Type.MIDDLEWARE, null, path);
         if (cache.has(tokens)) {
@@ -196,20 +156,12 @@ const factory = () => {
             }
         }
 
-        /**
-         *
-         * @param acc
-         * @param _token
-         * @param i
-         * @param tokens
-         */
         const reducer = (acc: Middleware[], _token: Token, i: number, tokens: Token[]): Middleware[] => {
             const partial = tokens.slice(0, i + 1);
             const middlewares = eject<Array<[Middleware, Position]>>(Type.MIDDLEWARE, partial, routes)
                 .filter(Boolean)
                 .filter(([, current]) => position == null || current < position)
-                .map(([fn]) => fn)
-            ;
+                .map(([fn]) => fn);
 
             return [
                 ...acc,
@@ -226,11 +178,6 @@ const factory = () => {
         return reduced;
     };
 
-    /**
-     *
-     * @param method
-     * @param path
-     */
     const resolve = (method: Method, path: Path): Parameters => {
         const tokens = tokenize(Type.LISTENER, method, path);
         const context = {} as Parameters;
@@ -271,17 +218,10 @@ const factory = () => {
         return context;
     };
 
-    /**
-     *
-     * @param method
-     * @param path
-     * @param listener
-     */
     const set = (method: Method, path: Path, listener: Listener | Middleware) => {
         const type = (!method)
             ? Type.MIDDLEWARE
-            : Type.LISTENER
-        ;
+            : Type.LISTENER;
 
         const tokens = tokenize(type, method, path);
         cache.del(tokens);
@@ -291,11 +231,6 @@ const factory = () => {
         insert(type, tokens, listener, position, routes);
     };
 
-    /**
-     *
-     * @param method
-     * @param path
-     */
     const get = (method: Method, path: Path): [Listener, Position] => {
         const token = tokenize(Type.LISTENER, method, path);
 
