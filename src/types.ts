@@ -12,12 +12,12 @@ export type Response = ServerResponse;
 export type Path = Opaque<'Path', string>;
 
 export type Router = {
-    use (middleware: Middleware): void,
-    has (method: Method, path: string): boolean,
-    on (method: Method, path: string, listener: Listener): unknown,
-    chain (...pool: Array<Listener | Middleware>): Listener,
-    route (req: Request, res: Response): unknown,
-    register (base: string): boolean,
+    use: (middleware: Middleware) => void,
+    has: (method: Method, path: string) => boolean,
+    on: (method: Method, path: string, listener: Listener) => unknown,
+    chain: (...pool: Array<Listener | Middleware>) => Listener,
+    route: (req: Request, res: Response) => unknown,
+    register: (base: string) => boolean,
 }
 
 export type Config = {
@@ -27,10 +27,10 @@ export type Config = {
 };
 
 export type Cache<T> = {
-    has(tokens: Token[]): boolean,
-    get(tokens: Token[]): T,
-    set(tokens: Token[], value: T): Cache<T>,
-    del(tokens: Token[]): void,
+    has: (tokens: Token[]) => boolean,
+    get: (tokens: Token[]) => T,
+    set: (tokens: Token[], value: T) => Cache<T>,
+    del: (tokens: Token[]) => void,
 }
 
 export type Method = typeof Methods[number];
