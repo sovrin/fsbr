@@ -1,14 +1,9 @@
-import assert from "assert";
-import factory from "../src/cache";
-import {Token} from '../dist/types';
+import assert from 'assert';
+import factory from '../src/cache';
+import type {Token} from '../src/types';
+import {noop} from './utils';
 
 describe('cache', () => {
-
-    /**
-     *
-     */
-    const noop = () => {};
-
     it('should set/get cached value', (done) => {
         const cache = factory();
         const key = ['cache', 'fn'] as Token[];
@@ -54,5 +49,5 @@ describe('cache', () => {
         ++len;
         cache.set(['cache', 'fn', len.toString()] as Token[], test);
         assert(cache.get(['cache', 'fn', '0'] as Token[]) === undefined);
-    })
+    });
 });

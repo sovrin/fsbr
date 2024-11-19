@@ -2,11 +2,19 @@
   "name": "fsbr",
   "version": "1.1.2",
   "description": "file structure based router for servers",
-  "main": "./dist/index.js",
-  "exports": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc --project tsconfig.prod.json",
+    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build:esm": "tsc --project tsconfig.esm.json",
+    "build": "npm run build:cjs && npm run build:esm",
     "test": "mocha -r ts-node/register/transpile-only --full-trace 'test/**/*.test.ts'",
     "watch": "mocha -r ts-node/register/transpile-only --reporter dot --watch --watch-files 'src/**/*.ts' 'test/**/*.test.ts'",
     "coverage": "nyc npm test"
@@ -26,21 +34,19 @@
   },
   "keywords": [
     "express",
-    "micro",
     "router"
   ],
   "devDependencies": {
     "@types/mocha": "^10",
     "@types/node": "^22",
     "@types/supertest": "^6",
-    "micro": "^10",
+    "@typescript-eslint/eslint-plugin": "^6",
+    "@typescript-eslint/parser": "^6",
+    "eslint": "^8",
     "mocha": "^10",
     "nyc": "^17",
     "supertest": "^6",
     "ts-node": "^10",
-    "typescript": "^5",
-    "@typescript-eslint/eslint-plugin": "^6",
-    "@typescript-eslint/parser": "^6",
-    "eslint": "^8"
+    "typescript": "^5"
   }
 }

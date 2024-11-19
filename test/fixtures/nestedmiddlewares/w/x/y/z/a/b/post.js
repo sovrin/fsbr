@@ -1,7 +1,7 @@
-const {send} = require('micro');
+const {flush} = require('../../../../../../../../utils');
 
 module.exports = async (req, res) => {
     res.data = ["foobar"];
 
-    send(res, 200, {data: res.data});
+    flush(res, 200, {data: res.data});
 };

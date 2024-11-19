@@ -1,6 +1,7 @@
 import {readdirSync, statSync} from 'fs';
 import {basename, extname, resolve} from 'path';
-import creator from './creator';
+
+import routesClosure from './routes';
 
 import type {
     Method,
@@ -17,36 +18,35 @@ import type {
     Next,
 } from './types';
 
-const factory = (config: Config = {}): Router => {
-    const routes = creator('routes')();
-    const final = creator('final')(config);
+const closure = (config: Config = {}): Router => {
+    const routes = routesClosure();
 
     const {
         entry = 'index',
         ext = '.js',
     }: Config = config;
 
-    const chain = <T> (...pool: Array<Middleware | Listener>): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
-        pool = Array.from(pool)
+    const chain = <T> (...input: Array<Middleware | Listener>): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
+        input = Array.from(input)
             .filter(Boolean);
 
         return async (req: Request, res: Response, parameters?: Parameters): Promise<T> => {
-            let fns = pool.filter((fn) => (
+            let fns = input.filter((fn) => (
                 fn.length !== 4
             ));
 
             const next = async (error: unknown = null) => {
-                if (error && pool) {
-                    fns = pool.filter((fn) => (
+                if (error && input) {
+                    fns = input.filter((fn) => (
                         fn.length === 4
                     ));
 
-                    pool = null;
+                    input = null;
                 }
 
                 const fn = fns.shift();
                 if (!fn) {
-                    return final(req, res, null, error);
+                    return undefined;
                 }
 
                 const arg = (fns.length == 0 && !error)
@@ -61,7 +61,7 @@ const factory = (config: Config = {}): Router => {
                     // eslint-disable-next-line prefer-spread
                     return await fn.apply(null, args);
                 } catch (error) {
-                    await next(error);
+                    return await next(error);
                 }
             };
 
@@ -77,9 +77,9 @@ const factory = (config: Config = {}): Router => {
         routes.set(null, null, middleware);
     };
 
-    const has = (method: Method, path: string): boolean => (
-        !!routes.get(method, path as Path).length
-    );
+    const has = (method: Method, path: string): boolean => {
+        return routes.has(method, path as Path);
+    };
 
     const route: Listener = async <T> (req: Request, res: Response): Promise<T> => {
         const {url, method, headers: {host}} = req;
@@ -93,7 +93,6 @@ const factory = (config: Config = {}): Router => {
         const stack = [
             ...middlewares,
             listener,
-            final,
         ].filter(Boolean);
 
         return chain<T>(...stack)(req, res, parameters);
@@ -104,11 +103,10 @@ const factory = (config: Config = {}): Router => {
 
         const traverse = (path: string): void => {
             const absolute = resolve(path);
+            const pointer = resolve(absolute, `${entry}${ext}`);
 
             try {
-                const pointer = resolve(absolute, `${entry}${ext}`);
                 let middleware = require(pointer);
-
                 if (middleware.default && typeof middleware.default === 'function') {
                     middleware = middleware.default;
                 }
@@ -124,7 +122,6 @@ const factory = (config: Config = {}): Router => {
 
             const bind = (name: string): void => {
                 const pointer = resolve(absolute, name);
-
                 if (statSync(pointer).isDirectory()) {
                     return traverse(pointer);
                 }
@@ -172,7 +169,7 @@ const factory = (config: Config = {}): Router => {
  * Date: 01.09.2020
  * Time: 10:46
  */
-export default factory;
+export default closure;
 export type {
     Middleware,
     Config,

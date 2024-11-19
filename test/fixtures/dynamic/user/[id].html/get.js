@@ -1,5 +1,5 @@
-const {send} = require('micro');
+const {flush} = require('../../../../utils');
 
 module.exports = async (req, res, match) => {
-    send(res, 200, match);
+    flush(res, 200, match);
 };

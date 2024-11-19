@@ -1,11 +1,15 @@
-import creator from './creator';
-import type {Listener, Method, Middleware, Parameters, Path, Position, Routes, Token} from './types';
+import cacheClosure from './cache';
+
 import {arrayEqual, matches} from './utils';
 import {LISTENERS, MIDDLEWARES, RESOLVER} from './const';
+import type {Listener, Method, Middleware, Parameters, Path, Position, Routes, Token} from './types';
 
-const VARIABLE = /:([a-zA-Z0-9]+)|\[([a-zA-Z0-9]+)\]/g;
+const VARIABLE = /:([a-zA-Z0-9]+)|\[([a-zA-Z0-9]+)]/g;
 const PATH = '/';
 const WILDCARD = '*';
+
+const TOKEN_DYNAMIC = 'dynamic';
+const TOKEN_STATIC = 'static';
 
 enum Type {
     MIDDLEWARE = '/Middleware/',
@@ -13,20 +17,20 @@ enum Type {
     RESOLVER = '/Resolver/',
 }
 
-const factory = () => {
+const closure = () => {
     const routes: Routes = {};
-    const cache = creator('cache')<[Middleware[], Position]>();
+    const cache = cacheClosure<[Middleware[], Position]>();
     let position: Position = 0 as Position;
 
-    const tokenize = (type: Type, method: Method, path: Path): Token[] => (
-        [
-            type,
-            ...[method, path].filter(Boolean)
-                .join(PATH)
-                .split(PATH)
-                .filter(Boolean),
-        ] as Token[]
-    );
+    const tokenize = (type: Type, method: Method, path: Path): Token[] => {
+        const tokens = [method, path]
+            .filter(Boolean)
+            .join(PATH)
+            .split(PATH)
+            .filter(Boolean);
+
+        return [type, ...tokens] as Token[];
+    };
 
     const find = (routes: Routes, needle: string): Token => {
         const tokens = Object.keys(routes)
@@ -72,8 +76,8 @@ const factory = () => {
                 [MIDDLEWARES]: [],
                 [RESOLVER]: {
                     type: token.match(VARIABLE)
-                        ? 'dynamic'
-                        : 'static',
+                        ? TOKEN_DYNAMIC
+                        : TOKEN_STATIC,
                     key: token,
                     variables: parse(token),
                 },
@@ -99,7 +103,6 @@ const factory = () => {
 
     const eject = <T> (type: Type, tokens: Token[], context: Routes, level = 2): T => {
         let token = tokens.shift();
-
         if (!token) {
             if (level === 0 && context[WILDCARD]) {
                 return eject<T>(type, tokens, context[WILDCARD], --level);
@@ -203,7 +206,7 @@ const factory = () => {
             }
 
             const {variables, key, type} = resolver;
-            if (type !== 'dynamic') {
+            if (type !== TOKEN_DYNAMIC) {
                 next(key);
             }
 
@@ -237,11 +240,22 @@ const factory = () => {
         return eject<[Listener, Position]>(Type.LISTENER, token, routes);
     };
 
+    const has = (method: Method, path: Path): boolean => {
+        const token = tokenize(Type.LISTENER, method, path);
+        const hit = token.reduce((routes, token) => routes[token], routes);
+        if (!hit) {
+            return false;
+        }
+
+        return hit[LISTENERS] != null;
+    };
+
     return {
         reduce,
         resolve,
         set,
         get,
+        has,
     };
 };
 
@@ -250,4 +264,4 @@ const factory = () => {
  * Date: 20.12.2020
  * Time: 23:15
  */
-export default factory;
+export default closure;

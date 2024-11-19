@@ -4,8 +4,6 @@
 [![types][types-src]][types-href]
 [![size][size-src]][size-href]
 [![coverage][coverage-src]][coverage-href]
-[![Dependencies][dep-src]][dep-href]
-[![devDependencies][devDep-src]][devDep-href]
 [![License][license-src]][license-href]
 
 > file structure based router for servers
@@ -24,12 +22,24 @@ import {createServer} from 'http';
 
 const {use, register, route} = router();
 
+// will be invoked on every request, before the route
 use((req, res, next) => {
-    //
-    next();
+    // do middleware things
+    return next();
 });
 
 register('./routes');
+
+// will be invoked if no route was found
+use((_req, res) => {
+    res.statusCode = 404;
+    res.end('Not Found');
+});
+
+use((req, res, next, error) => {
+    // handle error
+    return next(error);
+});
 
 const server = createServer(route);
 server.listen(8080);
@@ -43,11 +53,24 @@ import express from 'expess';
 const app = express();
 const {use, register, route} = router();
 
+// will be invoked on every request, before the route
 use((req, res, next) => {
-    //
-    next();
+    // do middleware things
+    return next();
 });
+
+use((req, res, next, error) => {
+    // handle error
+    return next(error);
+});
+
 register('./routes');
+
+// will be invoked if no route was found
+use((_req, res) => {
+    res.statusCode = 404;
+    res.end('Not Found');
+});
 
 app.use(route);
 app.listen(3000);
@@ -72,7 +95,6 @@ app.listen(3000);
 |:--------|:--------|:-------------------------------------------|
 | `ext`   | .js     | extension of middleware and listener files |
 | `entry` | index   | name of middleware files e.g. `middleware` |
-| `dev`   | false   | print errors in `final` listener           |
 
 Creates a new `fsbr` instance.
 ```javascript
@@ -137,7 +159,7 @@ const {use} = router();
 // normal middleware
 use('POST', '/post', (req , res, next) => {
     // do middleware things
-    next();
+    return next();
 });
 
 // middleware for errorhandling
@@ -145,7 +167,7 @@ use('POST', '/post', (req , res, next) => {
 use('get', '/photos', (req, res, next, error) => {
     // handle error
     console.error(error);
-    next();
+    return next();
 });
 ```
 
@@ -160,11 +182,11 @@ const {chain, on} = router();
 const middlewares = [
     (req, res, next) => {
         res.data = [];
-        next();
+        return next();
     },
     (req, res, next) => {
         res.data.push('foobar');
-        next();
+        return next();
     },
 ];
 
@@ -241,7 +263,7 @@ Would bind the following routes:
 * `POST:` example.com/photo/vacation
 * `POST:` example.com/user
 
-A GET call to `/photo/vacation` would execute the following files in order: 
+A GET call to `/photo/vacation` would execute the following scripts in order: 
 * `photo/index.js`
 * `photo/vacation/index.js`
 * `photo/vacation/get.js`
@@ -257,9 +279,5 @@ MIT License, see [LICENSE](./LICENSE)
 [types-href]: https://badgen.net/npm/types/fsbr
 [coverage-src]: https://coveralls.io/repos/github/sovrin/fsbr/badge.svg?branch=master
 [coverage-href]: https://coveralls.io/github/sovrin/fsbr?branch=master
-[dep-src]: https://badgen.net/david/dep/sovrin/fsbr
-[dep-href]: https://badgen.net/david/dep/sovrin/fsbr
-[devDep-src]: https://badgen.net/david/dev/sovrin/fsbr
-[devDep-href]: https://badgen.net/david/dev/sovrin/fsbr
 [license-src]: https://badgen.net/github/license/sovrin/fsbr
 [license-href]: LICENSE

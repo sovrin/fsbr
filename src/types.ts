@@ -23,14 +23,13 @@ export type Router = {
 export type Config = {
     entry?: string,
     ext?: string,
-    dev?: boolean,
 };
 
 export type Cache<T> = {
     has: (tokens: Token[]) => boolean,
     get: (tokens: Token[]) => T,
     set: (tokens: Token[], value: T) => Cache<T>,
-    del: (tokens: Token[]) => void,
+    del: (tokens: Token[]) => boolean,
 }
 
 export type Method = typeof Methods[number];

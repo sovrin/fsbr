@@ -1,15 +1,9 @@
-import {send} from "micro";
-import request from "supertest";
-import assert from "assert";
-import router from "../src";
+import request from 'supertest';
+import assert from 'assert';
+import router from '../src';
+import {flush, noop} from './utils';
 
 describe('fsbr', () => {
-    /**
-     *
-     */
-    const noop = () => {
-    };
-
     describe('has', () => {
         const {on, has} = router();
         on('GET', '/has', noop);
@@ -31,110 +25,96 @@ describe('fsbr', () => {
 
     describe('on/route', () => {
         describe('fallback', () => {
-            const {route} = router();
+            const {route, use} = router();
+            use((_req, res) => flush(res, 404));
 
             it('should respond with fallback to GET:/unknown', (done) => {
                 request(route)
                     .get('/unknown')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('wildcard url', () => {
-            const {on, route} = router();
+            const {on, route, use} = router();
 
-            on('GET', '*', (req, res) => {
-                send(res, 200);
-            });
+            on('GET', '*', (_req, res) => flush(res, 200));
+            use((_req, res) => flush(res, 404));
 
             it('should pass through with 200 to GET:/api/user/a/b/c/d', (done) => {
                 request(route)
                     .get('/api/user/a/b/c/d')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should pass through with 200 to GET index', (done) => {
                 request(route)
                     .get('')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
         });
 
         describe('nested wildcard url', () => {
-            const {on, route} = router();
+            const {on, route, use} = router();
 
-            on('GET', '/api/user/*', (req, res) => {
-                send(res, 200);
-            });
+            on('GET', '/api/user/*', (_req, res) => flush(res, 200));
+            use((_req, res) => flush(res, 404));
 
             it('should pass through with 200 to GET:/api/user/a/b/c/d', (done) => {
                 request(route)
                     .get('/api/user/a/b/c/d')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
-            it('should respond with 500 from fallback to GET:/api/user', (done) => {
+            it('should respond with 404 from fallback to GET:/api/user', (done) => {
                 request(route)
                     .get('/api/user')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('wildcard url and url variable', () => {
-            const {on, route} = router();
+            const {on, route, use} = router();
 
-            on('GET', '/api/:user/*', (req, res, param) => {
-                send(res, 200, param);
-            });
+            on('GET', '/api/:user/*', (req, res, param) => flush(res, 200, param));
+            use((_req, res) => flush(res, 404));
 
             it('should pass through with 200 to GET:/api/user/a/b/c/d with match', (done) => {
                 request(route)
                     .get('/api/joe/a/b/c/d')
                     .expect('Content-Type', /json/)
                     .expect({'user': 'joe'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
-            it('should respond with 500 from fallback to GET:/api/joe', (done) => {
+            it('should respond with 404 from fallback to GET:/api/joe', (done) => {
                 request(route)
                     .get('/api/joe')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('wildcard method', () => {
             const {on, route} = router();
 
-            on('*', '/custom', (req, res) => {
-                send(res, 200);
-            });
+            on('*', '/custom', (req, res) => flush(res, 200));
 
             it('should respond with 200 to GET:/custom', (done) => {
                 request(route)
                     .get('/custom')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to POST:/custom', (done) => {
                 request(route)
                     .post('/custom')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to PUT:/custom', (done) => {
                 request(route)
                     .put('/custom')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
         });
 
@@ -142,19 +122,19 @@ describe('fsbr', () => {
             const {on, route} = router();
 
             on('GET', '/:id.foobar', (req, res, param) => {
-                send(res, 200, param);
+                flush(res, 200, param);
             });
 
             on('GET', '/user/:id', (req, res, match: any) => {
-                send(res, 200, match);
+                flush(res, 200, match);
             });
 
             on('GET', '/user/:id/:avatars/:number', (req, res, match: any) => {
-                send(res, 200, match);
+                flush(res, 200, match);
             });
 
             on('GET', '/user/:id/random/:number', (req, res, match: any) => {
-                send(res, 200, match);
+                flush(res, 200, match);
             });
 
             it('should respond 200 to GET:/user/123 with match', (done) => {
@@ -162,8 +142,7 @@ describe('fsbr', () => {
                     .get('/user/123')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond 200 to GET:/user/123/random/2 with match', (done) => {
@@ -171,8 +150,7 @@ describe('fsbr', () => {
                     .get('/user/123/random/2')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123', 'number': '2'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond 200 to GET:/foobar.foobar with match', (done) => {
@@ -180,30 +158,26 @@ describe('fsbr', () => {
                     .get('/foobar.foobar')
                     .expect('Content-Type', /json/)
                     .expect({'id': 'foobar'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
         });
 
         describe('malformed urls', () => {
-            const {on, route} = router();
+            const {on, route, use} = router();
 
-            on('GET', '/custom', (req, res) => {
-                send(res, 200);
-            });
+            on('GET', '/custom', (req, res) => flush(res, 200));
+            use((_req, res) => flush(res, 404));
 
-            it('should respond with 500 from fallback to GET:/:id/:id...', (done) => {
+            it('should respond with 404 from fallback to GET:/:id/:id...', (done) => {
                 request(route)
                     .get('/:id'.repeat(100))
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
-            it('should respond with 500 from fallback to GET:/:id/custom/:id...', (done) => {
+            it('should respond with 404 from fallback to GET:/:id/custom/:id...', (done) => {
                 request(route)
                     .get('/:id/custom'.repeat(100))
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
     });
@@ -228,7 +202,7 @@ describe('fsbr', () => {
         // @ts-ignore
         on('GET', '/custom', chain(...middlewares, (req, res) => {
             // @ts-ignore
-            send(res, 200, {data: res.data});
+            flush(res, 200, {data: res.data});
         }));
 
         it('should respond to 200 to GET:/custom', (done) => {
@@ -236,8 +210,7 @@ describe('fsbr', () => {
                 .get('/custom')
                 .expect('Content-Type', /json/)
                 .expect({'data': ['foobar']})
-                .expect(200, done)
-            ;
+                .expect(200, done);
         });
     });
 
@@ -248,15 +221,14 @@ describe('fsbr', () => {
 
                 on('GET', '/custom', (req, res) => {
                     // @ts-ignore
-                    send(res, 200, {data: res.data || false});
+                    flush(res, 200, {data: res.data || false});
                 });
 
                 request(route)
                     .get('/custom')
                     .expect('Content-Type', /json/)
                     .expect({'data': false})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             describe('later bound middlewares are ignored', () => {
@@ -264,19 +236,19 @@ describe('fsbr', () => {
 
                 use((req, res, next) => {
                     // @ts-ignore
-                    res.data = "foo";
+                    res.data = 'foo';
 
                     next();
                 });
 
                 on('GET', '/custom', (req, res) => {
                     // @ts-ignore
-                    send(res, 200, {data: res.data || false});
+                    flush(res, 200, {data: res.data || false});
                 });
 
                 use((req, res, next) => {
                     // @ts-ignore
-                    res.data = "bar";
+                    res.data = 'bar';
 
                     next();
                 });
@@ -285,9 +257,8 @@ describe('fsbr', () => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
-                        .expect({'data': "foo"})
-                        .expect(200, done)
-                    ;
+                        .expect({'data': 'foo'})
+                        .expect(200, done);
                 });
             });
         });
@@ -307,8 +278,10 @@ describe('fsbr', () => {
 
             on('GET', '/custom', (req, res) => {
                 // @ts-ignore
-                send(res, 200, {data: res.data, calls: callCount});
+                flush(res, 200, {data: res.data, calls: callCount});
             });
+
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/custom with data of middleware', (done) => {
                 callCount = 0;
@@ -317,8 +290,7 @@ describe('fsbr', () => {
                     .get('/custom')
                     .expect('Content-Type', /json/)
                     .expect({'data': 123, 'calls': 1})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback with data of middleware', (done) => {
@@ -326,15 +298,13 @@ describe('fsbr', () => {
 
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
             it('should respond with 200 to GET:/custom with data of middleware (consecutive call)', (done) => {
                 request(route)
                     .get('/custom')
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should only be called twice', (done) => {
@@ -348,38 +318,14 @@ describe('fsbr', () => {
                             .expect(() => {
                                 assert(callCount === 2, 'middleware call count differs from expectation');
                             })
-                            .end(done)
-                        ;
-                    })
-                ;
+                            .end(done);
+                    });
             });
         });
 
         describe('use error middleware', () => {
-            describe('by throw Error and no error middleware', () => {
-                const {use, route} = router({dev: true});
-
-                use(() => {
-                    throw new Error('throw new whoops');
-                });
-
-                use((req, res, next) => {
-                    // @ts-ignore
-                    next(res.error.message);
-                });
-
-                it('should respond with 500 to GET:/custom with final middleware', (done) => {
-                    request(route)
-                        .get('/custom')
-                        .expect('Content-Type', /json/)
-                        .expect(/throw new whoops/)
-                        .expect(500, done)
-                    ;
-                });
-            });
-
             describe('by throw Error and error middleware', () => {
-                const {use, route} = router({dev: true});
+                const {use, route} = router();
 
                 use(() => {
                     throw new Error('throw new whoops');
@@ -389,54 +335,63 @@ describe('fsbr', () => {
                     // @ts-ignore
                     res.error = error.message;
 
-                    next(error);
+                    return next(error);
+                });
+
+                use((_req, res, next, error) => {
+                    flush(res, 500, error['message']);
                 });
 
                 it('should respond with 500 to GET:/custom with final middleware', (done) => {
                     request(route)
                         .get('/custom')
-                        .expect('Content-Type', /json/)
                         .expect(/throw new whoops/)
-                        .expect(500, done)
-                    ;
+                        .expect(500, done);
                 });
             });
 
             describe('by passing error', () => {
-                const {on, use, route} = router({dev: true});
+                const {on, use, route} = router();
                 let hits = 0;
 
                 use((req, res, next) => {
                     hits += 1;
-                    next('whoops');
+                    return next('whoops');
                 });
 
                 use((req, res, next, error) => {
                     hits += 1;
-                    next(error);
+                    return next(error);
+                });
+
+                use((_req, res, next, message) => {
+                    res.setHeader('Content-Type', 'application/json');
+
+                    return flush(res, 500, {message});
                 });
 
                 use((req, res, next) => {
                     hits += 1;
-                    next();
+
+                    return next();
                 });
 
                 on('GET', '/custom', (req, res) => {
                     hits += 1;
-                    send(res, 200);
+
+                    flush(res, 200);
                 });
 
                 it('should respond with 500 to GET:/custom from final middleware and never reach listener', (done) => {
                     request(route)
                         .get('/custom')
                         .expect('Content-Type', /json/)
-                        .expect('"whoops"')
+                        .expect({'message': 'whoops'})
                         .expect(500, (response) => {
                             assert(hits === 2);
 
                             done(response);
-                        })
-                    ;
+                        });
                 });
             });
         });
@@ -467,8 +422,10 @@ describe('fsbr', () => {
 
             on('GET', '/custom', (req, res) => {
                 // @ts-ignore
-                send(res, 200, {data: res.data, calls: callCount});
+                flush(res, 200, {data: res.data, calls: callCount});
             });
+
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/custom with data of middleware', (done) => {
                 callCount = 0;
@@ -477,8 +434,7 @@ describe('fsbr', () => {
                     .get('/custom')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['foo'], calls: 2})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should fallback with data of middleware', (done) => {
@@ -486,8 +442,7 @@ describe('fsbr', () => {
 
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
             it('should only be called four times', (done) => {
@@ -501,10 +456,8 @@ describe('fsbr', () => {
                             .expect(() => {
                                 assert(callCount === 4, 'middleware call count differs from expectation');
                             })
-                            .end(done)
-                        ;
-                    })
-                ;
+                            .end(done);
+                    });
             });
         });
 
@@ -512,7 +465,7 @@ describe('fsbr', () => {
             const {on, route, use} = router();
 
             use((req, res, next, error) => {
-                send(res, 500);
+                flush(res, 404);
 
                 next();
             });
@@ -521,13 +474,12 @@ describe('fsbr', () => {
                 throw new Error();
             });
 
-            it('should respond with 500 from fallback to GET:/:id/:id...', (done) => {
+            it('should respond with 404 from fallback to GET:/:id/:id...', (done) => {
                 request(route)
                     .get('/custom')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
-        })
+        });
     });
 
     describe('register', () => {
@@ -551,39 +503,38 @@ describe('fsbr', () => {
         });
 
         describe('flat folder structure - fixtures/plain', () => {
-            const {register, route} = router();
+            const {register, route, use} = router();
 
             register('./test/fixtures/plain');
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
                     .get('/')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to unknown route', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('dynamic url parameter folder structure - fixtures/dynamic', () => {
-            const {register, route} = router();
+            const {register, route, use} = router();
 
             register('./test/fixtures/dynamic');
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
                     .get('/')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/user/123', (done) => {
@@ -591,8 +542,7 @@ describe('fsbr', () => {
                     .get('/user/123')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/user/123.foobar', (done) => {
@@ -600,8 +550,7 @@ describe('fsbr', () => {
                     .get('/user/123.foobar')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123', 'ext': 'foobar'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/user/123.1', (done) => {
@@ -609,8 +558,7 @@ describe('fsbr', () => {
                     .get('/user/123.1')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 todas GET:/user/123.html', (done) => {
@@ -618,44 +566,40 @@ describe('fsbr', () => {
                     .get('/user/123.html')
                     .expect('Content-Type', /json/)
                     .expect({'id': '123'})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
             it('should respond with fallback to unknown route GET:/user/foo/bar', (done) => {
                 request(route)
                     .get('/user/foo/bar')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('nested folder structure - fixtures/nested', () => {
-            const {register, route} = router();
+            const {register, route, use} = router();
 
             register('./test/fixtures/nested');
+            use((_req, res) => flush(res, 404));
 
             it('should with respond 200 to GET:/a', (done) => {
                 request(route)
                     .get('/a')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should with respond with fallback to GET:/b', (done) => {
                 request(route)
                     .get('/b')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
             it('should with respond with fallback to GET:/b/c', (done) => {
@@ -663,8 +607,7 @@ describe('fsbr', () => {
                     .get('/a')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should with respond 200 to POST:/b/c', (done) => {
@@ -672,31 +615,29 @@ describe('fsbr', () => {
                     .get('/a')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('multiple flat folder structures - fixtures/nested/[a|b]', () => {
-            const {register, route} = router();
+            const {register, route, use} = router();
 
             register('./test/fixtures/nested/a');
             register('./test/fixtures/nested/b');
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
                     .get('/')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/c', (done) => {
@@ -704,8 +645,7 @@ describe('fsbr', () => {
                     .get('/c')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/c/', (done) => {
@@ -713,37 +653,34 @@ describe('fsbr', () => {
                     .get('/c/')
                     .expect('Content-Type', /json/)
                     .expect({'ok': true})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('flat folder structure with middleware - fixtures/middleware', () => {
-            const {register, route} = router();
+            const {register, route, use} = router();
 
             register('./test/fixtures/middleware');
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
                     .get('/')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['foo', 'bar']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
@@ -758,85 +695,83 @@ describe('fsbr', () => {
             });
 
             register('./test/fixtures/middleware');
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
                     .get('/')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['baz', 'bar']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
         describe('middlewares only folder structure - fixtures/onlymiddlewares', () => {
             describe('with wildcard route', () => {
-                const {register, on, route} = router();
+                const {register, on, route, use} = router();
 
                 register('./test/fixtures/onlymiddlewares');
 
                 on('GET', '/proxy/*', (req, res) => {
                     // @ts-ignore
-                    send(res, 200, {data: res.data});
+                    flush(res, 200, {data: res.data});
                 });
+
+                use((_req, res) => flush(res, 404));
 
                 it('should respond with 200 to GET:/', (done) => {
                     request(route)
                         .get('/proxy/user')
                         .expect('Content-Type', /json/)
                         .expect({'data': ['foo']})
-                        .expect(200, done)
-                    ;
+                        .expect(200, done);
                 });
             });
 
             describe('without wildcard route', () => {
-                const {register, route} = router();
+                const {register, route, use} = router();
 
                 register('./test/fixtures/onlymiddlewares');
+                use((_req, res) => flush(res, 404));
 
                 it('should respond with fallback to listener-less route GET:/proxy/user', (done) => {
                     request(route)
                         .get('/proxy/user')
-                        .expect(500, done)
-                    ;
+                        .expect(404, done);
                 });
             });
         });
 
         describe('nested middleware folder structure with nested middlewares - fixtures/nestedmiddlewares', () => {
-            const {register, route} = router();
+            const {register, route, use} = router();
 
             register('./test/fixtures/nestedmiddlewares');
+            use((_req, res) => flush(res, 404));
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
                     .get('/')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['a1', 'a2']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with fallback to GET:/a/b', (done) => {
                 request(route)
                     .get('/a/b')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
             it('should respond with fallback to GET:/a/b/c', (done) => {
                 request(route)
                     .get('/a/b/c')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
 
             it('should respond with 200 to GET:/a/b/c/d', (done) => {
@@ -844,8 +779,7 @@ describe('fsbr', () => {
                     .get('/a/b/c/d')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['a1', 'a2', 'c', 'd']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to POST:/a/b', (done) => {
@@ -853,8 +787,7 @@ describe('fsbr', () => {
                     .post('/a/b')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['foobar']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/w/x/y/z', (done) => {
@@ -862,8 +795,7 @@ describe('fsbr', () => {
                     .get('/w/x/y/z')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['a1', 'a2', 'w_index', 'y_index', 'z_index']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 200 to GET:/w/x/y/z/a/b/c/d', (done) => {
@@ -871,15 +803,13 @@ describe('fsbr', () => {
                     .get('/w/x/y/z/a/b/c/d')
                     .expect('Content-Type', /json/)
                     .expect({'data': ['a1', 'a2', 'w_index', 'y_index', 'z_index', 'c', 'd']})
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
 
             it('should respond with 404 fallback to unknown route GET:/foo', (done) => {
                 request(route)
                     .get('/foo')
-                    .expect(500, done)
-                ;
+                    .expect(404, done);
             });
         });
 
@@ -895,14 +825,14 @@ describe('fsbr', () => {
                 });
 
                 register('./test/fixtures/nestedmiddlewares');
+                use((_req, res) => flush(res, 404));
 
                 it('should respond with 200 to GET:/', (done) => {
                     request(route)
                         .get('/')
                         .expect('Content-Type', /json/)
                         .expect({'data': ['baz', 'a1', 'a2']})
-                        .expect(200, done)
-                    ;
+                        .expect(200, done);
                 });
 
                 it('should respond with 200 to GET:/w', (done) => {
@@ -910,10 +840,9 @@ describe('fsbr', () => {
                         .get('/w')
                         .expect('Content-Type', /json/)
                         .expect({'data': ['baz', 'a1', 'a2', 'w_index']})
-                        .expect(200, done)
-                    ;
+                        .expect(200, done);
                 });
-            })
+            });
 
             describe('with tailing middlewares', () => {
                 describe('later bound middlewares are ignored', () => {
@@ -935,17 +864,18 @@ describe('fsbr', () => {
                         next();
                     });
 
+                    use((_req, res) => flush(res, 404));
+
                     it('should ignore last middleware', (done) => {
                         request(route)
                             .get('/w/yeet')
                             .expect('Content-Type', /json/)
                             .expect({'data': ['a1', 'a2', 'w_index', 'wildcard_index']})
-                            .expect(200, done)
-                        ;
+                            .expect(200, done);
                     });
                 });
             });
-        })
+        });
 
         describe('error handling in middleware - fixtures/errorhandling', () => {
             describe('inside handler', () => {
@@ -955,18 +885,20 @@ describe('fsbr', () => {
                 use((req, res, next, error) => {
                     errors.push(error);
 
-                    next(error);
+                    return next(error);
                 });
 
                 use((req, res, next, error) => {
                     errors.push(error);
 
-                    next(error);
+                    return next(error);
                 });
 
-                use((req, res, next) => {
-                    next();
-                })
+                use((_req, res, next, error) => {
+                    flush(res, 500, error);
+
+                    return next(error);
+                });
 
                 register('./test/fixtures/errorhandling');
 
@@ -977,11 +909,10 @@ describe('fsbr', () => {
                             const [error] = errors;
 
                             assert(errors.length === 2, 'only one error should be thrown');
-                            assert(error.message === "handler throw error", 'thrown error differs from expectation');
+                            assert(error.message === 'handler throw error', 'thrown error differs from expectation');
 
                             done(response);
-                        })
-                    ;
+                        });
                 });
             });
 
@@ -1000,8 +931,10 @@ describe('fsbr', () => {
                 use((req, res, next, error) => {
                     errors.push(error);
 
-                    next();
+                    return next();
                 });
+
+                use((_req, res, next, error) => flush(res, 500, error));
 
                 register('./test/fixtures/errorhandling');
 
@@ -1014,8 +947,7 @@ describe('fsbr', () => {
                             assert(errors.length === 1, 'only two errors should be thrown');
                             assert(error.message === 'middleware throw error', 'thrown error differs from expectation');
                             done(response);
-                        })
-                    ;
+                        });
                 });
             });
         });
@@ -1030,8 +962,7 @@ describe('fsbr', () => {
                     .get('/a')
                     .expect('Content-Type', /json/)
                     .expect(['foo'])
-                    .expect(200, done)
-                ;
+                    .expect(200, done);
             });
         });
     });

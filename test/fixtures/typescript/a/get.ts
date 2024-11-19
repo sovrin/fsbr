@@ -1,5 +1,5 @@
-import {send} from "micro";
+import {flush} from "../../../utils";
 
 export default async (req, res) => {
-    send(res, 200, res.data);
+    flush(res, 200, res.data);
 }

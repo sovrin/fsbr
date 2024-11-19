@@ -1,12 +1,8 @@
-import assert from "assert";
-import factory from "../src/routes";
+import assert from 'assert';
+import factory from '../src/routes';
 import {Path, Position} from '../src/types';
 
 describe('routes', () => {
-
-    /**
-     *
-     */
     const createNoop = () => {
         return () => {};
     };
@@ -40,7 +36,7 @@ describe('routes', () => {
             assert(position === 1, 'returned value differs from original');
 
             done();
-        })
+        });
     });
 
     describe('reduce', () => {
@@ -50,17 +46,13 @@ describe('routes', () => {
 
             for (let i = 0; i < steps.length; i++) {
                 const path = steps.slice(0, i + 1)
-                    .join('/') as Path
-                ;
-
+                    .join('/') as Path;
                 routes.set(null, path, createNoop());
             }
 
             for (let i = 0; i < steps.length; i++) {
                 const path = steps.slice(0, i + 1)
-                    .join('/') as Path
-                ;
-
+                    .join('/') as Path;
                 const middlewares = routes.reduce(path);
                 const unique = [...new Set(middlewares)];
 
@@ -88,7 +80,6 @@ describe('routes', () => {
 
             done();
         });
-
 
         it('should use cache', (done) => {
             const routes = factory();

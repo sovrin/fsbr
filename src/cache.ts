@@ -1,6 +1,6 @@
 import type {Cache, Token} from './types';
 
-const factory = <T> (length = 1000) => {
+const closure = <T> (length = 1000) => {
     const cache: Map<string, T> = new Map();
 
     const serialize = (tokens: Token[]): string => (
@@ -52,4 +52,4 @@ const factory = <T> (length = 1000) => {
  * Date: 23.12.2020
  * Time: 17:59
  */
-export default factory;
+export default closure;

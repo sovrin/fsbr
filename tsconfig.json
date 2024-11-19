@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
-    "resolveJsonModule": true,
+    "target": "ES2020",
+    "module": "commonjs",
+    "outDir": "./dist/cjs",
+    "declaration": true,
+    "declarationDir": "./dist/types",
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES6",
     "moduleResolution": "Node",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./src",
-    "declaration": true
+    "sourceMap": false,
+    "baseUrl": "./src"
   },
   "exclude": [
     "test/**"
