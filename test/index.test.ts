@@ -961,7 +961,7 @@ describe('fsbr', () => {
                 request(route)
                     .get('/a')
                     .expect('Content-Type', /json/)
-                    .expect(['foo'])
+                    .expect(['i1', 'a1', 'a2'])
                     .expect(200, done);
             });
         });

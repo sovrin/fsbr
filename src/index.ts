@@ -107,7 +107,7 @@ const closure = (config: Config = {}): Router => {
 
             try {
                 let middleware = require(pointer);
-                if (middleware.default && typeof middleware.default === 'function') {
+                if (middleware.default && (typeof middleware.default === 'function' || Array.isArray(middleware.default))) {
                     middleware = middleware.default;
                 }
 
