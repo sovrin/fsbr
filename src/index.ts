@@ -6,16 +6,17 @@ import routesClosure from './routes';
 import type {
     Method,
     Config,
-    Listener,
+    Handler,
     Middleware,
     Router,
     Path,
     Request,
     Response,
     ErrorArgs,
-    ListenerArgs,
+    HandlerArgs,
     Parameters,
     Next,
+    Listener,
 } from './types';
 
 const closure = (config: Config = {}): Router => {
@@ -55,7 +56,7 @@ const closure = (config: Config = {}): Router => {
 
                 const args = (fn.length === 4)
                     ? [req, res, arg, error] as ErrorArgs
-                    : [req, res, arg] as ListenerArgs;
+                    : [req, res, arg] as HandlerArgs;
 
                 try {
                     // eslint-disable-next-line prefer-spread
@@ -69,8 +70,8 @@ const closure = (config: Config = {}): Router => {
         };
     };
 
-    const on = (method: Method, path: string, listener: Listener): void => {
-        routes.set(method, path as Path, listener);
+    const on = (method: Method, path: string, handler: Handler): void => {
+        routes.set(method, path as Path, handler);
     };
 
     const use = (middleware: Middleware): void => {
@@ -81,7 +82,7 @@ const closure = (config: Config = {}): Router => {
         return routes.has(method, path as Path);
     };
 
-    const route: Listener = async <T> (req: Request, res: Response): Promise<T> => {
+    const route: Handler = async <T>(req: Request, res: Response): Promise<T> => {
         const {url, method, headers: {host}} = req;
         const {pathname} = new URL(url, `https://${host}`);
 
@@ -130,9 +131,9 @@ const closure = (config: Config = {}): Router => {
                     return;
                 }
 
-                let listener = require(pointer);
-                if (listener.default && typeof listener.default === 'function') {
-                    listener = listener.default;
+                let handler = require(pointer);
+                if (handler.default && (typeof handler.default === 'function' || Array.isArray(handler.default))) {
+                    handler = handler.default;
                 }
 
                 const method = basename(name, ext)
@@ -141,7 +142,7 @@ const closure = (config: Config = {}): Router => {
                 const pathname = path.replace(base, '')
                     .replace(/\\/g, '/');
 
-                on(method, pathname, listener);
+                on(method, pathname, handler);
             };
 
             for (const file of readdirSync(path)) {
@@ -174,8 +175,9 @@ export type {
     Middleware,
     Config,
     Method,
-    Listener,
+    Handler,
     Response,
     Request,
     Next,
+    Listener,
 };

@@ -1,8 +1,8 @@
 import cacheClosure from './cache';
 
 import {arrayEqual, matches} from './utils';
-import {LISTENERS, MIDDLEWARES, RESOLVER} from './const';
-import type {Listener, Method, Middleware, Parameters, Path, Position, Routes, Token} from './types';
+import {HANDLERS, MIDDLEWARES, RESOLVER} from './const';
+import type {Handler, Method, Middleware, Parameters, Path, Position, Routes, Token} from './types';
 
 const VARIABLE = /:([a-zA-Z0-9]+)|\[([a-zA-Z0-9]+)]/g;
 const PATH = '/';
@@ -13,7 +13,7 @@ const TOKEN_STATIC = 'static';
 
 enum Type {
     MIDDLEWARE = '/Middleware/',
-    LISTENER = '/Listener/',
+    HANDLER = '/Handler/',
     RESOLVER = '/Resolver/',
 }
 
@@ -72,7 +72,7 @@ const closure = () => {
 
         if (!context[token]) {
             context[token] = {
-                [LISTENERS]: [],
+                [HANDLERS]: [],
                 [MIDDLEWARES]: [],
                 [RESOLVER]: {
                     type: token.match(VARIABLE)
@@ -85,8 +85,8 @@ const closure = () => {
         }
 
         if (tokens.length === 0) {
-            if (type === Type.LISTENER) {
-                context[token][LISTENERS] = [target, position];
+            if (type === Type.HANDLER) {
+                context[token][HANDLERS] = [target, position];
             } else {
                 if (!Array.isArray(target)) {
                     target = [target];
@@ -109,8 +109,8 @@ const closure = () => {
             }
 
             switch (type) {
-            case Type.LISTENER:
-                return context[LISTENERS] as T;
+            case Type.HANDLER:
+                return context[HANDLERS] as T;
             case Type.MIDDLEWARE:
                 return context[MIDDLEWARES] as T;
             case Type.RESOLVER:
@@ -121,9 +121,9 @@ const closure = () => {
         const wildcardContext = context[WILDCARD];
         if (wildcardContext) {
             switch (type) {
-            case Type.LISTENER:
-                if (wildcardContext[LISTENERS].length) {
-                    return wildcardContext[LISTENERS] as T;
+            case Type.HANDLER:
+                if (wildcardContext[HANDLERS].length) {
+                    return wildcardContext[HANDLERS] as T;
                 }
 
                 break;
@@ -139,7 +139,7 @@ const closure = () => {
             if (!token) {
                 switch (type) {
                 case Type.MIDDLEWARE:
-                case Type.LISTENER:
+                case Type.HANDLER:
                     return [] as T;
                 default:
                     return null;
@@ -182,7 +182,7 @@ const closure = () => {
     };
 
     const resolve = (method: Method, path: Path): Parameters => {
-        const tokens = tokenize(Type.LISTENER, method, path);
+        const tokens = tokenize(Type.HANDLER, method, path);
         const context = {} as Parameters;
         let level = 0;
         let cursor = routes;
@@ -221,33 +221,33 @@ const closure = () => {
         return context;
     };
 
-    const set = (method: Method, path: Path, listener: Listener | Middleware) => {
+    const set = (method: Method, path: Path, subject: Handler | Middleware) => {
         const type = (!method)
             ? Type.MIDDLEWARE
-            : Type.LISTENER;
+            : Type.HANDLER;
 
         const tokens = tokenize(type, method, path);
         cache.del(tokens);
 
         ++position;
 
-        insert(type, tokens, listener, position, routes);
+        insert(type, tokens, subject, position, routes);
     };
 
-    const get = (method: Method, path: Path): [Listener, Position] => {
-        const token = tokenize(Type.LISTENER, method, path);
+    const get = (method: Method, path: Path): [Handler, Position] => {
+        const token = tokenize(Type.HANDLER, method, path);
 
-        return eject<[Listener, Position]>(Type.LISTENER, token, routes);
+        return eject<[Handler, Position]>(Type.HANDLER, token, routes);
     };
 
     const has = (method: Method, path: Path): boolean => {
-        const token = tokenize(Type.LISTENER, method, path);
+        const token = tokenize(Type.HANDLER, method, path);
         const hit = token.reduce((routes, token) => routes[token], routes);
         if (!hit) {
             return false;
         }
 
-        return hit[LISTENERS] != null;
+        return hit[HANDLERS] != null;
     };
 
     return {

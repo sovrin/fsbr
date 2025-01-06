@@ -1,5 +1,5 @@
 import {IncomingMessage, ServerResponse} from 'http';
-import {LISTENERS, MIDDLEWARES, RESOLVER} from './const';
+import {HANDLERS, MIDDLEWARES, RESOLVER} from './const';
 
 type Opaque<K, T> = T & { __TYPE__: K };
 
@@ -14,8 +14,8 @@ export type Path = Opaque<'Path', string>;
 export type Router = {
     use: (middleware: Middleware) => void,
     has: (method: Method, path: string) => boolean,
-    on: (method: Method, path: string, listener: Listener) => unknown,
-    chain: (...pool: Array<Listener | Middleware>) => Listener,
+    on: (method: Method, path: string, handler: Handler) => unknown,
+    chain: (...pool: Array<Handler | Middleware>) => Handler,
     route: (req: Request, res: Response) => unknown,
     register: (base: string) => boolean,
 }
@@ -49,7 +49,12 @@ export const Methods = [
 
 export type Parameters = Opaque<'Parameters', object>;
 
-export type Listener = (req: Request, res: Response, params?: Parameters) => unknown;
+export type Handler = (req: Request, res: Response, params?: Parameters) => unknown;
+
+/**
+ * @deprecated use Handler instead
+ */
+export type Listener = Handler;
 
 export type Next = (error?: unknown) => Middleware;
 
@@ -60,8 +65,8 @@ export type Token = Opaque<'Token', string>;
 export type Position = Opaque<'Position', number>;
 
 export type Routes = {
-    [LISTENERS]?: [
-        Listener?,
+    [HANDLERS]?: [
+        Handler?,
         Position?,
         Token?,
     ],
@@ -82,6 +87,6 @@ export type ErrorArgs = [
     Request, Response, Next | Parameters, string
 ];
 
-export type ListenerArgs = [
+export type HandlerArgs = [
     Request, Response, Next | Parameters
 ];

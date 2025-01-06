@@ -18,9 +18,9 @@ $ npm i fsbr
 ### Native
 ```js
 import router from 'fsbr';
-import {createServer} from 'http';
+import { createServer } from 'http';
 
-const {use, register, route} = router();
+const { use, register, route } = router();
 
 // will be invoked on every request, before the route
 use((req, res, next) => {
@@ -48,10 +48,10 @@ server.listen(8080);
 ### Express
 ```js
 import router from 'fsbr';
-import express from 'expess';
+import express from 'express';
 
 const app = express();
-const {use, register, route} = router();
+const { use, register, route } = router();
 
 // will be invoked on every request, before the route
 use((req, res, next) => {
@@ -93,7 +93,7 @@ app.listen(3000);
 #### `Config`
 |         | default | description                                |
 |:--------|:--------|:-------------------------------------------|
-| `ext`   | .js     | extension of middleware and listener files |
+| `ext`   | .js     | extension of middleware and handler files  |
 | `entry` | index   | name of middleware files e.g. `middleware` |
 
 Creates a new `fsbr` instance.
@@ -106,9 +106,9 @@ const {on, use, chain, register, route} = router();
 ***
 
 <a name="routerOn"></a>
-#### `router.on(method, path, listener)`
+#### `router.on(method, path, handler)`
 Registers a route. A Method can be any known [`HTTP method/verb`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) or a wildcard `*`.
-Paths can contain a variable denoted via a semicolon. In this case, listeners receive a third optional argument with the resolved variable. Paths can also have a wildcard. `fsbr` will match every request after that. 
+Paths can contain a variable denoted via a colon. In this case, handlers receive a third optional argument with the resolved variable. Paths can also have a wildcard. `fsbr` will match every request after that. 
 
 ```javascript
 const {on} = router();
@@ -124,13 +124,13 @@ on('GET', '/user/:id', (req, res, params) => {
 });
 
 // route with wildcard method
-// any request with any HTTP method/verb on this route executes the listener
+// any request with any HTTP method/verb on this route executes the handler
 on('*', '/foo', (req, res) => {
     //
 });
 
 // route with wildcard in pathname
-// any request with '/proxy/...' executes the listener
+// any request with '/proxy/...' executes the handler
 on('GET', '/proxy/*', (req, res) => {
     //
 });
@@ -151,7 +151,7 @@ has('POST', '/post');
 
 <a name="routerUse"></a>
 #### `router.use(middleware)`
-Registers a middleware function to the router. Middlewares with 4 parameters are considered as error listeners.
+Registers a middleware function to the router. Middlewares with 4 parameters are considered as error handlers.
 Note the order. The error parameter here should be on the fourth place, unlike in other frameworks like express.
 ```javascript
 const {use} = router();
@@ -216,8 +216,8 @@ server.listen(8080);
 Recursively register all routes within the `base` folder and call the optional callback when finished.
 Each directory represents a part of the URL pathname.
 Dynamic routes can be created by enclosing the directory name in square brackets e.g. `[id]`.
-Listeners are named by [`HTTP methods/verbs`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) and export a default listening function.
-Middlewares can be placed alongside the listeners as `index` files. These files can export a single middleware function or an array of functions.
+Handlers are named by [`HTTP methods/verbs`](https://developer.mozilla.org/de/docs/Web/HTTP/Methods) and export a default listening function.
+Middlewares can be placed alongside the handlers as `index` files. These files can export a single middleware function or an array of functions.
 
 ```javascript
 const {register} = router();
