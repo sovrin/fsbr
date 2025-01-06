@@ -59,9 +59,12 @@ const closure = () => {
     };
 
     const parse = (route: string): string[] => {
-        return Array.from(matches(route, VARIABLE))
-            .map((matches) => matches.filter(Boolean))
-            .map(([, match]) => match);
+        const results = [];
+        for (const match of matches(route, VARIABLE)) {
+            results.push(match[1] || match[2]);
+        }
+
+        return results;
     };
 
     const insert = (type: Type, tokens: Token[], target, position: Position, context: Routes): boolean => {
@@ -152,6 +155,7 @@ const closure = () => {
 
     const reduce = (path: Path, position?: Position): Middleware[] => {
         const tokens = tokenize(Type.MIDDLEWARE, null, path);
+
         if (cache.has(tokens)) {
             const [middlewares, current] = cache.get(tokens);
             if (position == null || current < position) {
@@ -159,63 +163,52 @@ const closure = () => {
             }
         }
 
-        const reducer = (acc: Middleware[], _token: Token, i: number, tokens: Token[]): Middleware[] => {
+        const uniqueMiddlewares = new Set<Middleware>();
+        const tokensLength = tokens.length;
+
+        for (let i = 0; i < tokensLength; i++) {
             const partial = tokens.slice(0, i + 1);
-            const middlewares = eject<Array<[Middleware, Position]>>(Type.MIDDLEWARE, partial, routes)
-                .filter(Boolean)
-                .filter(([, current]) => position == null || current < position)
-                .map(([fn]) => fn);
+            const middlewares = eject<Array<[Middleware, Position]>>(Type.MIDDLEWARE, partial, routes);
 
-            return [
-                ...acc,
-                ...middlewares,
-            ];
-        };
+            for (const [fn, current] of middlewares) {
+                if (fn && (position == null || current < position)) {
+                    uniqueMiddlewares.add(fn);
+                }
+            }
+        }
 
-        const reduced = tokens.reduce(reducer, []);
-        cache.set(tokens, [
-            reduced,
-            position,
-        ]);
+        const result = Array.from(uniqueMiddlewares);
+        cache.set(tokens, [result, position]);
 
-        return reduced;
+        return result;
     };
 
     const resolve = (method: Method, path: Path): Parameters => {
         const tokens = tokenize(Type.HANDLER, method, path);
         const context = {} as Parameters;
-        let level = 0;
         let cursor = routes;
 
-        const next = (token: Token): void => {
-            cursor = cursor[token];
-            ++level;
-        };
-
-        while (cursor && level < tokens.length) {
+        for (let level = 0; level < tokens.length && cursor; level++) {
             const step = tokens[level];
             if (cursor[step]) {
-                next(step);
+                cursor = cursor[step];
                 continue;
             }
 
             const resolver = eject<Routes[typeof RESOLVER]>(Type.RESOLVER, [step], cursor);
             if (!resolver) {
-                next(step);
+                cursor = cursor[step];
                 continue;
             }
 
-            const {variables, key, type} = resolver;
-            if (type !== TOKEN_DYNAMIC) {
-                next(key);
+            if (resolver.type === TOKEN_DYNAMIC) {
+                const values = step.split('.');
+                resolver.variables.forEach((variable, i) => {
+                    context[variable] = values[i];
+                });
             }
 
-            const values = step.split('.');
-            variables.forEach((variable, i) => {
-                context[variable] = values[i];
-            });
-
-            next(key);
+            cursor = cursor[resolver.key];
         }
 
         return context;

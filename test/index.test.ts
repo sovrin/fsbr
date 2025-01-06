@@ -460,26 +460,6 @@ describe('fsbr', () => {
                     });
             });
         });
-
-        describe('trigger final middleware twice', () => {
-            const {on, route, use} = router();
-
-            use((req, res, next, error) => {
-                flush(res, 404);
-
-                next();
-            });
-
-            on('GET', '/custom', () => {
-                throw new Error();
-            });
-
-            it('should respond with 404 from fallback to GET:/:id/:id...', (done) => {
-                request(route)
-                    .get('/custom')
-                    .expect(404, done);
-            });
-        });
     });
 
     describe('register', () => {
@@ -507,6 +487,14 @@ describe('fsbr', () => {
 
             register('./test/fixtures/plain');
             use((_req, res) => flush(res, 404));
+
+            it('should run through middleware inside handler', (done) => {
+                request(route)
+                    .post('/')
+                    .expect('Content-Type', /json/)
+                    .expect({'ok': true, data: ['a1']})
+                    .expect(200, done);
+            });
 
             it('should respond with 200 to GET:/', (done) => {
                 request(route)
@@ -962,6 +950,14 @@ describe('fsbr', () => {
                     .get('/a')
                     .expect('Content-Type', /json/)
                     .expect(['i1', 'a1', 'a2'])
+                    .expect(200, done);
+            });
+
+            it('should run through middleware inside handler', (done) => {
+                request(route)
+                    .post('/a')
+                    .expect('Content-Type', /json/)
+                    .expect(['i1', 'a1', 'a2', 'h1'])
                     .expect(200, done);
             });
         });

@@ -27,7 +27,9 @@ const closure = (config: Config = {}): Router => {
         ext = '.js',
     }: Config = config;
 
-    const chain = <T> (...input: Array<Middleware | Listener>): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
+    const chain = <T> (
+        ...input: Array<Middleware | Handler>
+    ): (req: Request, res: Response, parameters?: Parameters) => Promise<T> => {
         input = Array.from(input)
             .filter(Boolean);
 
@@ -62,11 +64,11 @@ const closure = (config: Config = {}): Router => {
                     // eslint-disable-next-line prefer-spread
                     return await fn.apply(null, args);
                 } catch (error) {
-                    return await next(error);
+                    return next(error);
                 }
             };
 
-            return await next(null);
+            return next(null);
         };
     };
 
@@ -84,19 +86,21 @@ const closure = (config: Config = {}): Router => {
 
     const route: Handler = async <T>(req: Request, res: Response): Promise<T> => {
         const {url, method, headers: {host}} = req;
-        const {pathname} = new URL(url, `https://${host}`);
+        const pathname = new URL(url, `https://${host}`).pathname as Path;
 
-        const path = pathname as Path;
-        const [listener, position] = routes.get(method, path);
-        const middlewares = routes.reduce(path, position);
-        const parameters = routes.resolve(method, path);
+        const [match, middlewares, parameters] = (() => {
+            const [handler, position] = routes.get(method, pathname);
 
-        const stack = [
-            ...middlewares,
-            listener,
-        ].filter(Boolean);
+            return [
+                Array.isArray(handler)
+                    ? chain(...handler)
+                    : handler,
+                routes.reduce(pathname, position),
+                routes.resolve(method, pathname),
+            ];
+        })();
 
-        return chain<T>(...stack)(req, res, parameters);
+        return chain<T>(...middlewares, match)(req, res, parameters);
     };
 
     const register = (base: string): boolean => {
