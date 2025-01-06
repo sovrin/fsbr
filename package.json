@@ -1,6 +1,6 @@
 {
   "name": "fsbr",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "file structure based router for servers",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
